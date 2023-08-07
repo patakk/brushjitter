@@ -220,23 +220,21 @@ function handleDrawing(event) {
 }
 
 function handleEnd(event) {
-    if (event.pointerType === 'pen') {
-        baseHue = (baseHue0 + .1 * (-1 + 2 * Math.random()) + 1.) % 1.;
-        baseColorHSL = [baseHue, baseSat, baseBri];
-        baseColor = hsl2rgb(baseColorHSL[0], baseColorHSL[1], baseColorHSL[2]);
+    baseHue = (baseHue0 + .1 * (-1 + 2 * Math.random()) + 1.) % 1.;
+    baseColorHSL = [baseHue, baseSat, baseBri];
+    baseColor = hsl2rgb(baseColorHSL[0], baseColorHSL[1], baseColorHSL[2]);
 
-        for (let k = 0; k < 4; k++) {
-            let lightnessRand = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]);
-            let scale = lightnessBase0 / lightnessRand;
-            baseColor = baseColor.map(x => x * scale);
-            baseColor = baseColor.map(x => Math.min(x, 1.0));
-        }
-
-        baseColorHSL = rgb2hsl(baseColor[0], baseColor[1], baseColor[2]);
-
-        mouseDown = false;
-        picker.jscolor.show();
+    for (let k = 0; k < 4; k++) {
+        let lightnessRand = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]);
+        let scale = lightnessBase0 / lightnessRand;
+        baseColor = baseColor.map(x => x * scale);
+        baseColor = baseColor.map(x => Math.min(x, 1.0));
     }
+
+    baseColorHSL = rgb2hsl(baseColor[0], baseColor[1], baseColor[2]);
+
+    mouseDown = false;
+    picker.jscolor.show();
 }
 
 canvas.addEventListener('pointerdown', (event) => {
