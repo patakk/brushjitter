@@ -204,6 +204,9 @@ let lightnessBase0 = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]
 // });
 
 function handleDrawing(event) {
+    if (!mouseDown) {
+        return;
+    }
     // Prevent default behavior to stop things like scrolling.
     event.preventDefault();
 
@@ -213,17 +216,10 @@ function handleDrawing(event) {
     event.preventDefault();
     picker.jscolor.show();
 
-    if(!mouseDown) {
-        prevX = x;
-        prevY = y;
-    }
 
 
     // Ensure we're dealing with pen input (Apple Pencil or other stylus devices).
-    if (mouseDown) {
-        drawQuad(x, y, brushSize);
-        // mouseDown = true;
-    }
+    drawQuad(x, y, brushSize);
 }
 
 function handleEnd(event) {
@@ -245,6 +241,11 @@ function handleEnd(event) {
 }
 
 canvas.addEventListener('pointerdown', (event) => {
+
+    if (!mouseDown) {
+        prevX = x;
+        prevY = y;
+    }
     mouseDown = true;
 });
 canvas.addEventListener('pointermove', handleDrawing);
@@ -289,10 +290,6 @@ function drawQuad(x, y, size) {
     const glX = (x / canvas.width) * 2 - 1;
     const glY = -(y / canvas.height) * 2 + 1;
 
-    if (!mouseDown) {
-        prevX = x;
-        prevY = y;
-    }
 
     let dist = Math.sqrt((glX - prevX) * (glX - prevX) + (glY - prevY) * (glY - prevY));
     let parts = Math.floor(dist / detail);
