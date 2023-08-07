@@ -210,13 +210,12 @@ function handleDrawing(event) {
     const x = event.clientX;
     const y = event.clientY;
 
-    console.log(event)
     event.preventDefault();
 
     // Ensure we're dealing with pen input (Apple Pencil or other stylus devices).
-    if (event.pointerType === 'pen') {
+    if (event.pointerType === 'pen' && mouseDown) {
         drawQuad(x, y, brushSize);
-        mouseDown = true;
+        // mouseDown = true;
     }
 }
 
@@ -240,7 +239,13 @@ function handleEnd(event) {
     }
 }
 
-canvas.addEventListener('pointerdown', handleDrawing);
+canvas.addEventListener('pointerdown', (event) => {
+    if (event.pointerType === 'pen') {
+        drawQuad(x, y, brushSize);
+        mouseDown = true;
+    }
+});
+canvas.addEventListener('pointermove', handleDrawing);
 canvas.addEventListener('pointerup', handleEnd);
 
 
