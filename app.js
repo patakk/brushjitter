@@ -175,33 +175,33 @@ let baseColor = hsl2rgb(baseColorHSL[0], baseColorHSL[1], baseColorHSL[2]);
 let lightnessBase0 = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]);
 
 
-canvas.addEventListener('mousemove', (event) => {
-    if (event.buttons == 1) {
+// canvas.addEventListener('mousemove', (event) => {
+//     if (event.buttons == 1) {
 
-        drawQuad(event.clientX, event.clientY, brushSize);
-        // drawQuad(event.clientX, event.clientY, brushSize, [lightnessRand, lightnessRand, lightnessRand, 1.0]);
-        mouseDown = true;
-    }
-});
-canvas.addEventListener('mouseup', (event) => {
+//         drawQuad(event.clientX, event.clientY, brushSize);
+//         // drawQuad(event.clientX, event.clientY, brushSize, [lightnessRand, lightnessRand, lightnessRand, 1.0]);
+//         mouseDown = true;
+//     }
+// });
+// canvas.addEventListener('mouseup', (event) => {
 
-    baseHue = (baseHue0 + .1 * (-1 + 2 * Math.random()) + 1.) % 1.;
-    baseColorHSL = [baseHue, baseSat, baseBri];
-    baseColor = hsl2rgb(baseColorHSL[0], baseColorHSL[1], baseColorHSL[2]);
+//     baseHue = (baseHue0 + .1 * (-1 + 2 * Math.random()) + 1.) % 1.;
+//     baseColorHSL = [baseHue, baseSat, baseBri];
+//     baseColor = hsl2rgb(baseColorHSL[0], baseColorHSL[1], baseColorHSL[2]);
 
-    for (let k = 0; k < 4; k++) {
-        let lightnessRand = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]);
-        let scale = lightnessBase0 / lightnessRand;
-        baseColor = baseColor.map(x => x * scale);
-        baseColor = baseColor.map(x => Math.min(x, 1.0));
-    }
+//     for (let k = 0; k < 4; k++) {
+//         let lightnessRand = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]);
+//         let scale = lightnessBase0 / lightnessRand;
+//         baseColor = baseColor.map(x => x * scale);
+//         baseColor = baseColor.map(x => Math.min(x, 1.0));
+//     }
 
-    baseColorHSL = rgb2hsl(baseColor[0], baseColor[1], baseColor[2]);
+//     baseColorHSL = rgb2hsl(baseColor[0], baseColor[1], baseColor[2]);
 
-    mouseDown = false;
+//     mouseDown = false;
 
-    picker.jscolor.show();
-});
+//     picker.jscolor.show();
+// });
 
 function handleDrawing(event) {
     // Prevent default behavior to stop things like scrolling.
