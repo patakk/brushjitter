@@ -213,11 +213,9 @@ function handleDrawing(event) {
     event.preventDefault();
     picker.jscolor.show();
 
-    console.log(event)
-    console.log(event.pressure)
 
     // Ensure we're dealing with pen input (Apple Pencil or other stylus devices).
-    drawQuad(x, y, brushSize);
+    drawQuad(x, y, brushSize * event.pressure);
 }
 
 function handleEnd(event) {
