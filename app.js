@@ -174,26 +174,51 @@ let baseColorHSL = [baseHue, baseSat, baseBri];
 let baseColor = hsl2rgb(baseColorHSL[0], baseColorHSL[1], baseColorHSL[2]);
 let lightnessBase0 = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]);
 
-function handleDrawing(event) {
-    // This will prevent the default behavior, such as scrolling
-    event.preventDefault();
 
-    let x, y;
-    if (event.touches) {
-        // Use the first touch for position
-        x = event.touches[0].clientX;
-        y = event.touches[0].clientY;
-    } else {
-        x = event.clientX;
-        y = event.clientY;
+canvas.addEventListener('mousemove', (event) => {
+    if (event.buttons == 1) {
+
+        drawQuad(event.clientX, event.clientY, brushSize);
+        // drawQuad(event.clientX, event.clientY, brushSize, [lightnessRand, lightnessRand, lightnessRand, 1.0]);
+        mouseDown = true;
+    }
+});
+canvas.addEventListener('mouseup', (event) => {
+
+    baseHue = (baseHue0 + .1 * (-1 + 2 * Math.random()) + 1.) % 1.;
+    baseColorHSL = [baseHue, baseSat, baseBri];
+    baseColor = hsl2rgb(baseColorHSL[0], baseColorHSL[1], baseColorHSL[2]);
+
+    for (let k = 0; k < 4; k++) {
+        let lightnessRand = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]);
+        let scale = lightnessBase0 / lightnessRand;
+        baseColor = baseColor.map(x => x * scale);
+        baseColor = baseColor.map(x => Math.min(x, 1.0));
     }
 
-    if (event.type !== 'mouseup' && !event.touches) {
+    baseColorHSL = rgb2hsl(baseColor[0], baseColor[1], baseColor[2]);
+
+    mouseDown = false;
+
+    picker.jscolor.show();
+});
+
+function handleDrawing(event) {
+    // Prevent default behavior to stop things like scrolling.
+    event.preventDefault();
+
+    const x = event.clientX;
+    const y = event.clientY;
+
+    // Ensure we're dealing with pen input (Apple Pencil or other stylus devices).
+    if (event.pointerType === 'pen') {
         drawQuad(x, y, brushSize);
         mouseDown = true;
-    } else if (event.touches) {
-        // If it's a touchend event, you might want to handle other logic here
-    } else {
+    }
+}
+
+function handleEnd(event) {
+    if (event.pointerType === 'pen') {
         baseHue = (baseHue0 + .1 * (-1 + 2 * Math.random()) + 1.) % 1.;
         baseColorHSL = [baseHue, baseSat, baseBri];
         baseColor = hsl2rgb(baseColorHSL[0], baseColorHSL[1], baseColorHSL[2]);
@@ -212,10 +237,8 @@ function handleDrawing(event) {
     }
 }
 
-canvas.addEventListener('mousemove', handleDrawing);
-canvas.addEventListener('mouseup', handleDrawing);
-canvas.addEventListener('touchmove', handleDrawing);
-canvas.addEventListener('touchend', handleDrawing);
+canvas.addEventListener('pointermove', handleDrawing);
+canvas.addEventListener('pointerup', handleEnd);
 
 
 
