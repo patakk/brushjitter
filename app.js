@@ -209,9 +209,9 @@ function handleDrawing(event) {
 
     const x = event.clientX;
     const y = event.clientY;
-
+    
     // Ensure we're dealing with pen input (Apple Pencil or other stylus devices).
-    if (event.pointerType === 'pen') {
+        if (event.pointerType === 'pen' && e.touches[0]["force"] > 0) {
         drawQuad(x, y, brushSize);
         mouseDown = true;
     }
