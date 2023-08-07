@@ -213,7 +213,7 @@ function handleDrawing(event) {
     event.preventDefault();
 
     // Ensure we're dealing with pen input (Apple Pencil or other stylus devices).
-    if (event.pointerType === 'pen' && mouseDown) {
+    if (mouseDown) {
         drawQuad(x, y, brushSize);
         // mouseDown = true;
     }
@@ -240,10 +240,7 @@ function handleEnd(event) {
 }
 
 canvas.addEventListener('pointerdown', (event) => {
-    if (event.pointerType === 'pen') {
-        drawQuad(x, y, brushSize);
-        mouseDown = true;
-    }
+    mouseDown = true;
 });
 canvas.addEventListener('pointermove', handleDrawing);
 canvas.addEventListener('pointerup', handleEnd);
