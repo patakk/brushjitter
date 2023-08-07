@@ -207,6 +207,7 @@ function handleDrawing(event) {
 
     if(event.pressure < 0.05){
         handleEnd(event);
+        return;
     }
 
     // Prevent default behavior to stop things like scrolling.
