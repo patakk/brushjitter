@@ -205,16 +205,19 @@ let lightnessBase0 = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]
 
 function handleDrawing(event) {
 
+    const x = event.clientX;
+    const y = event.clientY;
+
     if(event.pressure < 0.05){
         handleEnd(event);
+        prevX = x;
+        prevY = y;
         return;
     }
 
     // Prevent default behavior to stop things like scrolling.
     event.preventDefault();
 
-    const x = event.clientX;
-    const y = event.clientY;
 
     event.preventDefault();
     picker.jscolor.show();
