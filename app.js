@@ -204,9 +204,6 @@ let lightnessBase0 = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]
 // });
 
 function handleDrawing(event) {
-    if (!mouseDown) {
-        return;
-    }
     // Prevent default behavior to stop things like scrolling.
     event.preventDefault();
 
@@ -216,7 +213,8 @@ function handleDrawing(event) {
     event.preventDefault();
     picker.jscolor.show();
 
-
+    console.log(event)
+    console.log(event.pressure)
 
     // Ensure we're dealing with pen input (Apple Pencil or other stylus devices).
     drawQuad(x, y, brushSize);
@@ -240,16 +238,8 @@ function handleEnd(event) {
     picker.jscolor.show();
 }
 
-canvas.addEventListener('pointerdown', (event) => {
-
-    if (!mouseDown) {
-        prevX = x;
-        prevY = y;
-    }
-    mouseDown = true;
-});
 canvas.addEventListener('pointermove', handleDrawing);
-canvas.addEventListener('pointerup', handleEnd);
+// canvas.addEventListener('pointerup', handleEnd);
 
 
 
