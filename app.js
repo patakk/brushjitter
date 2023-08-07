@@ -211,6 +211,13 @@ function handleDrawing(event) {
     const y = event.clientY;
 
     event.preventDefault();
+    picker.jscolor.show();
+
+    if(!mouseDown) {
+        prevX = x;
+        prevY = y;
+    }
+
 
     // Ensure we're dealing with pen input (Apple Pencil or other stylus devices).
     if (mouseDown) {
