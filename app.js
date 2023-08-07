@@ -210,6 +210,8 @@ function handleDrawing(event) {
     const x = event.clientX;
     const y = event.clientY;
 
+    console.log(event)
+
     // Ensure we're dealing with pen input (Apple Pencil or other stylus devices).
     if (event.pointerType === 'pen') {
         drawQuad(x, y, brushSize);
