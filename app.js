@@ -211,6 +211,7 @@ function handleDrawing(event) {
     const y = event.clientY;
 
     console.log(event)
+    event.preventDefault();
 
     // Ensure we're dealing with pen input (Apple Pencil or other stylus devices).
     if (event.pointerType === 'pen') {
@@ -239,7 +240,7 @@ function handleEnd(event) {
     }
 }
 
-canvas.addEventListener('pointermove', handleDrawing);
+canvas.addEventListener('pointerdown', handleDrawing);
 canvas.addEventListener('pointerup', handleEnd);
 
 
