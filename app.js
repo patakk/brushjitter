@@ -204,6 +204,11 @@ let lightnessBase0 = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]
 // });
 
 function handleDrawing(event) {
+
+    if(event.pressure < 0.05){
+        handleEnd(event);
+    }
+
     // Prevent default behavior to stop things like scrolling.
     event.preventDefault();
 
@@ -215,7 +220,7 @@ function handleDrawing(event) {
 
 
     // Ensure we're dealing with pen input (Apple Pencil or other stylus devices).
-    drawQuad(x, y, brushSize * event.pressure);
+    drawQuad(x, y, brushSize);
 }
 
 function handleEnd(event) {
