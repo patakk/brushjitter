@@ -8,6 +8,7 @@ export const drawingVertexShader = `
     uniform vec2 uResolution;
 
     varying vec2 vUV;
+    varying float vSize;
 
     void main(void) {
         vec2 size = vec2(uSize) / uResolution;
@@ -19,7 +20,8 @@ export const drawingVertexShader = `
         vec4 rotatedPos = vec4(rot * aVertexPosition.xy, 1.0, 1.0);
 
         gl_Position = aVertexPosition * vec4(size.xy, 1.0, 1.0) + vec4(uPosition, 0.0, 0.0);
-        vUV = aVertexPosition.xy * 0.5 + 0.5;
+        vUV = aVertexPosition.xy * 0.5 * vec2(1.,1.) + 0.5;
+        vSize = uSize;
 
     }
 `;
@@ -34,6 +36,7 @@ export const drawingFragmentShader = `
     uniform float uBrushJitter;
 
     varying vec2 vUV;
+    varying float vSize;
 
     
     #define NUM_OCTAVES 8
@@ -146,9 +149,12 @@ export const drawingFragmentShader = `
 
     void main(void) {
         float dist = distance(vUV.xy, vec2(0.5, 0.5));
-        float alpha = 1.0 - smoothstep(0.48, 0.5, dist);
+        float alpha = 1.0 - smoothstep(0.38, 0.5, dist);
+        alpha = 1.;
+        dist = smoothstep(0.0, 0.5, dist);
 
-        float ff = fbm3(vUV.xy*10., uTime*.01);
+        float frq = vSize/3.;
+        float ff = fbm3(vUV.xy*frq, uTime*.01);
         alpha *= smoothstep(0.5, 0.5+.2, ff);
 
         float rr = uBrushJitter*0.4*(-1.+2.*fbm3(vUV.xy*10.+31.31, uTime*.01*0.+213.13));

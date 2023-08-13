@@ -47,8 +47,8 @@ glcanvas = document.getElementById('pickerCanvas');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
-gl_picker = glcanvas.getContext('webgl', { preserveDrawingBuffer: true });
+gl = canvas.getContext('webgl2', { preserveDrawingBuffer: true });
+gl_picker = glcanvas.getContext('webgl2', { preserveDrawingBuffer: true });
 
 isIpad = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
 isPC = !isIpad;
