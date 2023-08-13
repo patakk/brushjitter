@@ -567,9 +567,7 @@ let initialTouchY = 0.0;
 let initialTouchY2 = 0.0;  // for the second touch point
 
 document.addEventListener('touchstart', function(event) {
-    debugelement.innerHTML = "touchstart";
     if (event.touches.length === 2) {
-        debugelement.innerHTML = "touchstart 22222";
         event.preventDefault();
         initialTouchY = event.touches[0].clientY;
         initialTouchY2 = event.touches[1].clientY;
@@ -581,7 +579,6 @@ document.addEventListener('touchstart', function(event) {
 
 let dragVal = pickedVal;
 canvas.addEventListener('touchmove', function(event) {
-    // debugelement.innerHTML = "touchmove " + (initialTouchY !== null) + " " + (initialTouchY2 !== null);
     if (initialTouchY !== null && initialTouchY2 !== null) {
         // Calculate the change in Y position for the average of two fingers
         let numtouches = event.touches.length;
@@ -592,9 +589,8 @@ canvas.addEventListener('touchmove', function(event) {
 
             // Use deltaY to control your dragVal. 
             // Depending on your needs, you might scale the value or use it directly.
-            dragVal = dragVal + deltaY * 0.03;  // scale the value for smoother control
+            dragVal = dragVal + deltaY * 0.0015;  // scale the value for smoother control
             pickedVal = Math.max(0.0, Math.min(1.0, dragVal));
-            debugelement.innerHTML = "touchmove 22222 " + pickedVal + 'hh';
             initialTouchY = event.touches[0].clientY;
             initialTouchY2 = event.touches[1].clientY;
             event.preventDefault();
