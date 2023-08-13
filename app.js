@@ -582,7 +582,7 @@ document.addEventListener('touchstart', function(event) {
 let dragVal = pickedVal;
 canvas.addEventListener('touchmove', function(event) {
     // debugelement.innerHTML = "touchmove " + (initialTouchY !== null) + " " + (initialTouchY2 !== null);
-    // if (initialTouchY !== null && initialTouchY2 !== null) {
+    if (initialTouchY !== null && initialTouchY2 !== null) {
         // Calculate the change in Y position for the average of two fingers
         debugelement.innerHTML = "touchmove 11112 ";
         let deltaY = ((event.touches[0].clientY - initialTouchY) + (event.touches[1].clientY - initialTouchY2)) / 2;
@@ -598,7 +598,7 @@ canvas.addEventListener('touchmove', function(event) {
 
         drawColorPicker(); // Make sure to only redraw the color picker, not the entire scene.
         hueSlider.value = pickedVal;
-    // }
+    }
 
 }, { passive: false });
 
