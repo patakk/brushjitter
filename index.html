@@ -17,14 +17,14 @@
                 -webkit-overflow-scrolling: touch;
             }
 
-            #canvas {
+            #mainCanvas {
                 position: absolute;
                 top: 0;
                 left: 0;
                 z-index: 1;
             }
 
-            #glCanvas {
+            #pickerCanvas {
                 position: absolute;
                 left: 114px;
                 top: 44px;
@@ -32,6 +32,14 @@
                 border: #000000;
                 border-style: solid;
                 border-width: 3px;
+                
+                -webkit-touch-callout: none;  /* iOS Safari */
+                -webkit-user-select: none;    /* Safari */
+                -khtml-user-select: none;     /* Konqueror HTML */
+                -moz-user-select: none;       /* Old versions of Firefox */
+                -ms-user-select: none;        /* Internet Explorer/Edge */
+                user-select: none;            /* Non-prefixed version, currently
+                                                supported by Chrome, Edge, Opera and Firefox */
             }
 
             #valueSlider {
@@ -66,17 +74,24 @@
                 top: 333px;
                 z-index: 33;
             }
+
+            
+            .no-select {
+            }
+
+
         </style>
     </head>
 
     <body>
-        <canvas id="canvas"></canvas>
-        <canvas id="glCanvas" width="200" height="200"></canvas>
+        <canvas id="mainCanvas"></canvas>
+        <canvas id="pickerCanvas" width="200" height="200"></canvas>
         <input id="valueSlider" type="range" min="0" max="100" value="50"/>
         <input id="brushSizeSlider" type="range" min="0" max="100" value="50"/>
         <div id="debug"></div>
 
-        <script src="app.js"></script>
+        <script type="module" src="app.js"></script>
+
     </body>
 
 </html>
