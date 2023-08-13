@@ -584,9 +584,10 @@ canvas.addEventListener('touchmove', function(event) {
     // debugelement.innerHTML = "touchmove " + (initialTouchY !== null) + " " + (initialTouchY2 !== null);
     if (initialTouchY !== null && initialTouchY2 !== null) {
         // Calculate the change in Y position for the average of two fingers
-        debugelement.innerHTML = "touchmove 11112 " + event.touches.length;
+        let numtouches = event.touches.length;
+        debugelement.innerHTML = "touchmove 11112 " + (numtouches == 2);
 
-        if (event.touches.length == 2) {
+        if (numtouches == 2) {
             
             let deltaY = ((event.touches[0].clientY - initialTouchY) + (event.touches[1].clientY - initialTouchY2)) / 2;
 
