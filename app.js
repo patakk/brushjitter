@@ -574,7 +574,6 @@ document.addEventListener('touchstart', function(event) {
         initialTouchY = event.touches[0].clientY;
         initialTouchY2 = event.touches[1].clientY;
     } else {
-        event.preventDefault();
         initialTouchY = null;
         initialTouchY2 = null;
     }
@@ -599,7 +598,6 @@ document.addEventListener('touchmove', function(event) {
         drawColorPicker(); // Make sure to only redraw the color picker, not the entire scene.
         hueSlider.value = pickedVal;
     }
-    event.preventDefault();
 
 }, { passive: false });
 
