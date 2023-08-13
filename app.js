@@ -579,16 +579,18 @@ document.addEventListener('touchstart', function(event) {
     }
 }, { passive: false });
 
+let dragVal = pickedVal;
 document.addEventListener('touchmove', function(event) {
     debugelement.innerHTML = "touchmove";
     if (initialTouchY !== null && initialTouchY2 !== null) {
-        debugelement.innerHTML = "touchmove 22222";
         // Calculate the change in Y position for the average of two fingers
         let deltaY = ((event.touches[0].clientY - initialTouchY) + (event.touches[1].clientY - initialTouchY2)) / 2;
 
         // Use deltaY to control your dragVal. 
         // Depending on your needs, you might scale the value or use it directly.
-        pickedVal = max(0.0, min(1.0, pickedVal + deltaY * 0.01));  // scale the value for smoother control
+        dragVal = dragVal + deltaY * 0.3;  // scale the value for smoother control
+        pickedVal = max(0.0, min(1.0, dragVal));
+        debugelement.innerHTML = "touchmove 22222 " + pickedVal;
         initialTouchY = event.touches[0].clientY;
         initialTouchY2 = event.touches[1].clientY;
         event.preventDefault();
