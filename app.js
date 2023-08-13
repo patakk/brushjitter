@@ -607,7 +607,6 @@ canvas.addEventListener('touchmove', function(event) {
 
 
 canvas.addEventListener('touchend', function(event) {
-    debugelement.innerHTML = "touchend";
     initialTouchY = null;
     initialTouchY2 = null;
 }, { passive: false });
