@@ -270,8 +270,7 @@ function handleEnd(event) {
     }
     mouseDown = false;
 
-
-    let rrn = .025 * (-1 + 2 * Math.random());
+    let rrn = .05 + .05 * (-1 + 2 * Math.random())*(1-currntSat)*(1-currntVal);
     currntHue = (pickedHue + rrn + 1.) % 1.;
     currntSat = pickedSat;
     currntVal = pickedVal;
@@ -305,7 +304,7 @@ function drawQuad(x, y, size, angle=0) {
 
     for(let k = 0; k < parts; k++) {
 
-        let rr = 0.06 + .06*(1-currntSat);
+        let rr = 0.026 + .046*(1-currntSat)*(1-currntVal);
 
         let randColor = hsx2rgb((currntHue + rr * (-1 + 2 * Math.random()) + 1) % 1, currntSat, currntVal);
 
