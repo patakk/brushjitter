@@ -1,5 +1,5 @@
-import { hsx2rgb } from './hsx2rgb.js';
-import { drawingVertexShader, drawingFragmentShader, pickerVertexShader, pickerFragmentShader } from './shaders.js';
+import { hsx2rgb, okhsl_to_srgb } from './hsx2rgb.js';
+import { drawingVertexShader, drawingFragmentShader, pickerVertexShader, pickerFragmentShader, screenVertexQuadSource, screenFragmentQuadSource } from './shaders.js';
 import { initShaderProgram, createQuadBuffer } from './shaders.js';
 
 let canvas, glcanvas;
@@ -10,6 +10,9 @@ let pickerProgram;
 let pickerProgramInfo;
 let drawingProgram;
 let drawingProgramInfo;
+let screenQuadProgram;
+let screenQuadProgramInfo;
+let screenQuadBuffer;
 
 let colorPickerBuffer;
 let vertexBuffer;
@@ -34,7 +37,7 @@ let initialTouchY = 0.0;
 let initialTouchY2 = 0.0;  // for the second touch point
 let prevX = 0;
 let prevY = 0;
-let detail = 3;
+let detail = 2;
 
 canvas = document.getElementById('mainCanvas');
 glcanvas = document.getElementById('pickerCanvas');
@@ -49,7 +52,10 @@ isIpad = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
 isPC = !isIpad;
 
 gl.enable(gl.BLEND);
-gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+
+gl.clearColor(.33, .33, .33, 1.0);
+gl.clear(gl.COLOR_BUFFER_BIT);
 
 colorPickerBuffer = createQuadBuffer(gl_picker);
 vertexBuffer = createQuadBuffer(gl);
@@ -80,6 +86,7 @@ drawingProgramInfo = {
     },
     uniformLocations: {
         brushColor: gl.getUniformLocation(drawingProgram, 'uBrushColor'),
+        time: gl.getUniformLocation(drawingProgram, 'uTime'),
         position: gl.getUniformLocation(drawingProgram, 'uPosition'),
         size: gl.getUniformLocation(drawingProgram, 'uSize'),
         angle: gl.getUniformLocation(drawingProgram, 'uAngle'),
@@ -87,6 +94,45 @@ drawingProgramInfo = {
     },
 };
 
+screenQuadProgram = initShaderProgram(gl, screenVertexQuadSource, screenFragmentQuadSource);
+screenQuadBuffer = createQuadBuffer(gl);
+
+screenQuadProgramInfo = {
+    program: screenQuadProgram,
+    attribLocations: {
+        vertexPosition: gl.getAttribLocation(screenQuadProgram, 'aVertexPosition'),
+    },
+    uniformLocations: {
+        texture: gl.getUniformLocation(screenQuadProgram, 'uTexture'),
+    }
+};
+
+const framebuffer = gl.createFramebuffer();
+gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+
+const screentex = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, screentex);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, canvas.width, canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, screentex, 0);
+
+function renderFramebufferToScreen(gl, framebufferTexture) {
+    gl.useProgram(screenQuadProgramInfo.program);
+
+    // Set the framebuffer's texture
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, framebufferTexture);
+    gl.uniform1i(screenQuadProgramInfo.uniformLocations.texture, 0);
+
+    // Bind and draw the full-screen quad
+    gl.bindBuffer(gl.ARRAY_BUFFER, screenQuadBuffer);
+    gl.vertexAttribPointer(screenQuadProgramInfo.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(screenQuadProgramInfo.attribLocations.vertexPosition);
+
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+}
 
 function setupEvents(){
     if(isIpad){
@@ -174,7 +220,7 @@ function setupEvents(){
                 drawColorPicker();
             }
             else{
-                brushSize = Math.max(10, Math.min(brushSize - event.deltaY * 0.0015, 80));
+                brushSize = Math.max(10, Math.min(brushSize - event.deltaY * 0.0075, 80));
                 brushSizeSlider.value = (brushSize - 10) / 70 * 100;
             }
         });
@@ -231,10 +277,15 @@ function drawColorPicker() {
     gl_picker.clear(gl_picker.COLOR_BUFFER_BIT);
 
     gl_picker.useProgram(pickerProgram);
+    gl_picker.bindFramebuffer(gl.FRAMEBUFFER, null);
+
     gl_picker.drawArrays(gl_picker.TRIANGLE_FAN, 0, 4);
 }
 
 let angle = 0;
+let prevXa = 0;
+let prevYa = 0;
+
 function handleDrawing(event) {
     const x = event.clientX;
     const y = event.clientY;
@@ -251,11 +302,11 @@ function handleDrawing(event) {
         return;
     }
         
-    let dist = Math.sqrt((x - prevX) * (x - prevX) + (y - prevY) * (y - prevY));
-    let vector = [x - prevX, y - prevY];
+    let dist = Math.sqrt((x - prevXa) * (x - prevXa) + (y - prevYa) * (y - prevYa));
+    let vector = [x - prevXa, y - prevYa];
     let normalized = [vector[0] / dist, vector[1] / dist];
-    if(dist > 0){
-        angle = angle + 0.1*(Math.atan2(normalized[1], normalized[0])-angle);
+    if(dist > 5){
+        angle = angle + 0.991*(Math.atan2(normalized[1], normalized[0])-angle);
         if(angle == 0){
             console.log(dist)
         }
@@ -297,11 +348,13 @@ function handleDown(event) {
 
 }
 
+let quadCount = 0;
 
 function drawQuad(x, y, size, angle=0) {
     let dist = Math.sqrt((x - prevX) * (x - prevX) + (y - prevY) * (y - prevY));
-    let parts = 1 + Math.floor(dist / detail);
+    let parts = 2 + Math.floor(dist / detail);
 
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
     for(let k = 0; k < parts; k++) {
 
         let rr = 0.026 + .046*(1-currntSat)*(1-currntVal);
@@ -317,7 +370,9 @@ function drawQuad(x, y, size, angle=0) {
         gl.uniform2f(drawingProgramInfo.uniformLocations.position, xx, yy);
         gl.uniform1f(drawingProgramInfo.uniformLocations.size, size);
         gl.uniform1f(drawingProgramInfo.uniformLocations.angle, angle);
-        gl.uniform4fv(drawingProgramInfo.uniformLocations.brushColor, [randColor[0], randColor[1], randColor[2], 1.0]);
+        // gl.uniform4fv(drawingProgramInfo.uniformLocations.brushColor, [randColor[0], randColor[1], randColor[2], 1.0]);
+        gl.uniform4fv(drawingProgramInfo.uniformLocations.brushColor, [(currntHue + 0*rr * (-1 + 2 * Math.random()) + 1) % 1, currntSat, currntVal, 1.0]);
+        gl.uniform1f(drawingProgramInfo.uniformLocations.time, quadCount++);
         gl.uniform2f(drawingProgramInfo.uniformLocations.resolution, canvas.width, canvas.height);
 
 
@@ -327,11 +382,23 @@ function drawQuad(x, y, size, angle=0) {
         gl.enableVertexAttribArray(drawingProgramInfo.attribLocations.vertexPosition);
 
         gl.useProgram(drawingProgramInfo.program);
+        
         gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.clearColor(.33, .33, .33, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    renderFramebufferToScreen(gl, screentex);
+
+    // Draw framebuffer's texture to screen
 
     prevX = x;
     prevY = y;
+
+    if(Math.sqrt((x - prevXa) * (x - prevXa) + (y - prevYa) * (y - prevYa)) > 6){
+        prevXa = x;
+        prevYa = y;
+    }
 }
 
 
