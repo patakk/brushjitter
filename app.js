@@ -395,7 +395,7 @@ function handleEnd(event) {
     mouseDown = false;
 
 
-    let rrn = .15 * (-1 + 2 * Math.random());
+    let rrn = .025 * (-1 + 2 * Math.random());
     currntHue = (pickedHue + rrn + 1.) % 1.;
     currntSat = pickedSat;
     currntVal = pickedVal;
