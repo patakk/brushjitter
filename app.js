@@ -574,6 +574,7 @@ document.addEventListener('touchstart', function(event) {
         initialTouchY = event.touches[0].clientY;
         initialTouchY2 = event.touches[1].clientY;
     } else {
+        event.preventDefault();
         initialTouchY = null;
         initialTouchY2 = null;
     }
@@ -581,7 +582,7 @@ document.addEventListener('touchstart', function(event) {
 
 let dragVal = pickedVal;
 document.addEventListener('touchmove', function(event) {
-    debugelement.innerHTML = "touchmove " + initialTouchY + " " + initialTouchY2;
+    debugelement.innerHTML = "touchmove " + (initialTouchY !== null) + " " + (initialTouchY2 !== null);
     if (initialTouchY !== null && initialTouchY2 !== null) {
         // Calculate the change in Y position for the average of two fingers
         let deltaY = ((event.touches[0].clientY - initialTouchY) + (event.touches[1].clientY - initialTouchY2)) / 2;
@@ -598,6 +599,8 @@ document.addEventListener('touchmove', function(event) {
         drawColorPicker(); // Make sure to only redraw the color picker, not the entire scene.
         hueSlider.value = pickedVal;
     }
+    event.preventDefault();
+
 }, { passive: false });
 
 
