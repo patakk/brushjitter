@@ -547,5 +547,5 @@ document.getElementById('glCanvas').addEventListener('mousemove', function(event
     }
 });
 
-canvas.addEventListener('pointermove', newcolorpicked);
-canvas.addEventListener('pointerdown', newcolorpicked);
+glcanvas.addEventListener('pointermove', newcolorpicked);
+glcanvas.addEventListener('pointerdown', newcolorpicked);
