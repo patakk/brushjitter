@@ -169,7 +169,7 @@ function setupEvents(){
 
                     // Use deltaY to control your dragVal. 
                     // Depending on your needs, you might scale the value or use it directly.
-                    dragVal = dragVal - deltaY * 0.0005;  // scale the value for smoother control
+                    dragVal = dragVal - deltaY * 0.00015;  // scale the value for smoother control
                     pickedVal = Math.max(0.0, Math.min(1.0, dragVal));
                     currntHue = pickedHue;
                     currntSat = pickedSat;
