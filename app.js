@@ -20,6 +20,7 @@ let debugelement;
 
 let valSlider;
 let brushSizeSlider;
+let jitterSlider;
 let pickedHue = 0.5;
 let pickedSat = 0.5;
 let pickedVal = 0.5;
@@ -27,6 +28,7 @@ let currntHue = 0.5;
 let currntSat = 0.5;
 let currntVal = 0.5;
 let brushSize = 30.0;  // Change this to adjust the size
+let brushJitter = 0.5;
 let mouseDown = false;
 
 let ctrlPressed = false;
@@ -64,6 +66,8 @@ valSlider = document.getElementById('valueSlider');
 debugelement = document.getElementById('debug');
 
 brushSizeSlider = document.getElementById('brushSizeSlider');
+jitterSlider = document.getElementById('jitterSlider');
+jitterSlider.value = brushJitter * 100;
 brushSizeSlider.value = (brushSize - 10) / 70 * 100;
 
 pickerProgram = initShaderProgram(gl_picker, pickerVertexShader, pickerFragmentShader);
@@ -89,6 +93,7 @@ drawingProgramInfo = {
         time: gl.getUniformLocation(drawingProgram, 'uTime'),
         position: gl.getUniformLocation(drawingProgram, 'uPosition'),
         size: gl.getUniformLocation(drawingProgram, 'uSize'),
+        brushJitter: gl.getUniformLocation(drawingProgram, 'uBrushJitter'),
         angle: gl.getUniformLocation(drawingProgram, 'uAngle'),
         resolution: gl.getUniformLocation(drawingProgram, 'uResolution')  // Added line
     },
@@ -234,6 +239,11 @@ function setupEvents(){
         brushSize = parseFloat(brushSizeSlider.value) / 100 * 70 + 10;  // Convert range from [1, 100] to [0.01, 1]
     });
 
+    
+    jitterSlider.addEventListener('input', function () {
+        brushJitter = parseFloat(jitterSlider.value) / 100;  // Convert range from [1, 100] to [0.01, 1]
+    });
+
     if(isIpad){
         glcanvas.addEventListener('pointermove', newcolorpicked);
         glcanvas.addEventListener('pointerdown', newcolorpicked);
@@ -371,6 +381,7 @@ function drawQuad(x, y, size, angle=0) {
         gl.uniform2f(drawingProgramInfo.uniformLocations.position, xx, yy);
         gl.uniform1f(drawingProgramInfo.uniformLocations.size, size);
         gl.uniform1f(drawingProgramInfo.uniformLocations.angle, angle);
+        gl.uniform1f(drawingProgramInfo.uniformLocations.brushJitter, brushJitter);
         // gl.uniform4fv(drawingProgramInfo.uniformLocations.brushColor, [randColor[0], randColor[1], randColor[2], 1.0]);
         gl.uniform4fv(drawingProgramInfo.uniformLocations.brushColor, [(currntHue + 0*rr * (-1 + 2 * Math.random()) + 1) % 1, currntSat, currntVal, 1.0]);
         gl.uniform1f(drawingProgramInfo.uniformLocations.time, quadCount++);

@@ -74,6 +74,19 @@
                 margin: 0 10px; /* Space on the sides to make it easier to grab */
                 outline: none; 
             }
+            
+            #jitterSlider {
+                position: absolute;
+                left: 33px;
+                top: 224px;
+                z-index: 12;
+                writing-mode: bt-lr; /* old syntax for IE */
+                -webkit-appearance: slider-vertical; /* Webkit browsers, like Chrome and Safari */
+                width: 8px; /* Thickness of the slider */
+                height: 150px; /* Height of the slider */
+                margin: 0 10px; /* Space on the sides to make it easier to grab */
+                outline: none; 
+            }
 
             #debug {
                 position: absolute;
@@ -91,6 +104,7 @@
         <canvas id="pickerCanvas" width="200" height="200"></canvas>
         <input id="valueSlider" type="range" min="0" max="100" value="50"/>
         <input id="brushSizeSlider" type="range" min="0" max="100" value="50"/>
+        <input id="jitterSlider" type="range" min="0" max="100" value="50"/>
         <div id="debug"></div>
 
         <script type="module" src="app.js"></script>

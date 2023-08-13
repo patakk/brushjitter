@@ -31,6 +31,7 @@ export const drawingFragmentShader = `
     uniform vec4 uBrushColor;
     uniform vec2 uResolution;
     uniform float uTime;
+    uniform float uBrushJitter;
 
     varying vec2 vUV;
 
@@ -150,7 +151,7 @@ export const drawingFragmentShader = `
         float ff = fbm3(vUV.xy*10., uTime*.01);
         alpha *= smoothstep(0.5, 0.5+.2, ff);
 
-        float rr = 0.2*(-1.+2.*fbm3(vUV.xy*10.+31.31, uTime*.01*0.+213.13));
+        float rr = uBrushJitter*0.4*(-1.+2.*fbm3(vUV.xy*10.+31.31, uTime*.01*0.+213.13));
 
         vec3 brushRgb = hsx2rgb(fract(uBrushColor.r+1.0+rr), uBrushColor.g, uBrushColor.b);
 
