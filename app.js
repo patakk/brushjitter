@@ -9,7 +9,8 @@ const gl2 = glcanvas.getContext('webgl', { preserveDrawingBuffer: true });
 gl.enable(gl.BLEND);
 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-
+const isIpad = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
+const isPC = !isIpad;
 
 // gl.clearColor(1.0, 1.0, 1.0, 1.0);
 // gl.clear(gl.COLOR_BUFFER_BIT);
@@ -408,14 +409,18 @@ function handleDown(event) {
 
 }
 
-canvas.addEventListener('pointermove', handleDrawing);
-canvas.addEventListener('pointerdown', handleDown);
-canvas.addEventListener('pointerup', handleEnd);
-canvas.addEventListener('pointerout', handleEnd);
+if(isIpad){
+    canvas.addEventListener('pointermove', handleDrawing);
+    canvas.addEventListener('pointerdown', handleDown);
+    canvas.addEventListener('pointerup', handleEnd);
+    canvas.addEventListener('pointerout', handleEnd);
+}
+else{
+    canvas.addEventListener('mousemove', handleDrawing);
+    canvas.addEventListener('mousedown', handleDown);
+    canvas.addEventListener('mouseup', handleEnd);
+}
 
-canvas.addEventListener('mousemove', handleDrawing);
-canvas.addEventListener('mousedown', handleDown);
-canvas.addEventListener('mouseup', handleEnd);
 
 
 function initShaderProgram(gll, vsSource, fsSource) {
@@ -536,16 +541,11 @@ function newcolorpicked(event){
     drawColorPicker(); // Make sure to only redraw the color picker, not the entire scene.
 }
 
-document.getElementById('glCanvas').addEventListener('click', function(event) {
-    newcolorpicked(event);
-});
-
-// handle draggin mouse
-document.getElementById('glCanvas').addEventListener('mousemove', function(event) {
-    if (event.buttons == 1) {
-        newcolorpicked(event);
-    }
-});
-
-glcanvas.addEventListener('pointermove', newcolorpicked);
-glcanvas.addEventListener('pointerdown', newcolorpicked);
+if(isIpad){
+    glcanvas.addEventListener('pointermove', newcolorpicked);
+    glcanvas.addEventListener('pointerdown', newcolorpicked);
+}
+else{
+    glcanvas.addEventListener('click', newcolorpicked);
+    glcanvas.addEventListener('mousemove', newcolorpicked);
+}
