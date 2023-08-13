@@ -185,6 +185,7 @@ let hueSlider = document.getElementById('valueSlider');
 hueSlider.addEventListener('input', (event) => {
 
     pickedVal = event.target.value / 100.0;
+    dragVal = pickedVal;
     currntHue = pickedHue;
     currntSat = pickedSat;
     currntVal = pickedVal;
