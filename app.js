@@ -60,6 +60,8 @@ let brushSize = 30.0;  // Change this to adjust the size
 let brushColor = [1.0, 0.0, 0.0, 1.0];  // Red color
 let mouseDown = false;
 
+let debugelement = document.getElementById('debug');
+
 let colorPickerBuffer;
 function createColorPickerBuffer() {
     const vertices = new Float32Array([
@@ -562,6 +564,7 @@ let initialTouchY = null;
 let initialTouchY2 = null;  // for the second touch point
 
 document.addEventListener('touchstart', function(event) {
+    debugelement.innerHTML = "touchstart";
     if (event.touches.length === 2) {
         initialTouchY = event.touches[0].clientY;
         initialTouchY2 = event.touches[1].clientY;
@@ -572,6 +575,7 @@ document.addEventListener('touchstart', function(event) {
 }, { passive: false });
 
 document.addEventListener('touchmove', function(event) {
+    debugelement.innerHTML = "touchmove";
     if (initialTouchY !== null && initialTouchY2 !== null) {
         // Calculate the change in Y position for the average of two fingers
         let deltaY = ((event.touches[0].clientY - initialTouchY) + (event.touches[1].clientY - initialTouchY2)) / 2;

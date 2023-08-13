@@ -60,6 +60,12 @@
                 outline: none; 
             }
 
+            #debug {
+                position: absolute;
+                left: 113px;
+                top: 333px;
+                z-index: 33;
+            }
         </style>
     </head>
 
@@ -68,6 +74,7 @@
         <canvas id="glCanvas" width="200" height="200"></canvas>
         <input id="valueSlider" type="range" min="0" max="100" value="50"/>
         <input id="brushSizeSlider" type="range" min="0" max="100" value="50"/>
+        <div id="debug"></div>
 
         <script src="app.js"></script>
     </body>
