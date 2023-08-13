@@ -590,7 +590,7 @@ document.addEventListener('touchmove', function(event) {
         // Depending on your needs, you might scale the value or use it directly.
         dragVal = dragVal + deltaY * 0.3;  // scale the value for smoother control
         pickedVal = max(0.0, min(1.0, dragVal));
-        debugelement.innerHTML = "touchmove 22222 " + pickedVal;
+        debugelement.innerHTML = "touchmove 22222 " + pickedVal + 'hh';
         initialTouchY = event.touches[0].clientY;
         initialTouchY2 = event.touches[1].clientY;
         event.preventDefault();
