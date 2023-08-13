@@ -566,6 +566,8 @@ let initialTouchY2 = null;  // for the second touch point
 document.addEventListener('touchstart', function(event) {
     debugelement.innerHTML = "touchstart";
     if (event.touches.length === 2) {
+        debugelement.innerHTML = "touchstart 22222";
+        event.preventDefault();
         initialTouchY = event.touches[0].clientY;
         initialTouchY2 = event.touches[1].clientY;
     } else {
@@ -577,6 +579,7 @@ document.addEventListener('touchstart', function(event) {
 document.addEventListener('touchmove', function(event) {
     debugelement.innerHTML = "touchmove";
     if (initialTouchY !== null && initialTouchY2 !== null) {
+        debugelement.innerHTML = "touchmove 22222";
         // Calculate the change in Y position for the average of two fingers
         let deltaY = ((event.touches[0].clientY - initialTouchY) + (event.touches[1].clientY - initialTouchY2)) / 2;
 
@@ -585,8 +588,15 @@ document.addEventListener('touchmove', function(event) {
         pickedVal = max(0.0, min(1.0, pickedVal + deltaY * 0.01));  // scale the value for smoother control
         initialTouchY = event.touches[0].clientY;
         initialTouchY2 = event.touches[1].clientY;
+        event.preventDefault();
 
         slider.value = pickedVal;
-        event.preventDefault();  // This prevents the page from scrolling
     }
+}, { passive: false });
+
+
+document.addEventListener('touchend', function(event) {
+    debugelement.innerHTML = "touchend";
+    initialTouchY = null;
+    initialTouchY2 = null;
 }, { passive: false });
