@@ -384,7 +384,11 @@ function handleDrawing(event) {
 }
 
 function handleEnd(event) {
+    if(event.pointerType !== 'pen' && isIpad) {
+        return;
+    }
     mouseDown = false;
+
 
     let rrn = .15 * (-1 + 2 * Math.random());
     currntHue = (pickedHue + rrn + 1.) % 1.;
@@ -393,12 +397,16 @@ function handleEnd(event) {
 }
 
 function handleDown(event) {
+    if(event.pointerType !== 'pen' && isIpad) {
+        return;
+    }
     const x = event.clientX;
     const y = event.clientY;
 
     if(event.pointerType === 'pen' && event.pressure === 0) {
         return;
     }
+
 
     if(!mouseDown){
         prevX = x;
