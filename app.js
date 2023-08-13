@@ -584,6 +584,7 @@ canvas.addEventListener('touchmove', function(event) {
     // debugelement.innerHTML = "touchmove " + (initialTouchY !== null) + " " + (initialTouchY2 !== null);
     // if (initialTouchY !== null && initialTouchY2 !== null) {
         // Calculate the change in Y position for the average of two fingers
+        debugelement.innerHTML = "touchmove 11112 ";
         let deltaY = ((event.touches[0].clientY - initialTouchY) + (event.touches[1].clientY - initialTouchY2)) / 2;
 
         // Use deltaY to control your dragVal. 
