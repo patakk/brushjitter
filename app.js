@@ -53,9 +53,6 @@ gl_picker = glcanvas.getContext('webgl2', { preserveDrawingBuffer: true });
 isIpad = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
 isPC = !isIpad;
 
-gl.enable(gl.BLEND);
-gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-
 gl.clearColor(.33, .33, .33, 1.0);
 gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -143,7 +140,7 @@ function renderFramebufferToScreen(gl, framebufferTexture) {
 function setupEvents(){
     if(isIpad){
         canvas.addEventListener('pointermove', handleDrawing);
-        canvas.addEventListener('pointerdown', handleDown);
+        // canvas.addEventListener('pointerdown', handleDown);
         canvas.addEventListener('pointerup', handleEnd);
         canvas.addEventListener('pointerout', handleEnd);
 
@@ -365,7 +362,10 @@ function drawQuad(x, y, size, angle=0) {
     let dist = Math.sqrt((x - prevX) * (x - prevX) + (y - prevY) * (y - prevY));
     let parts = 2 + Math.floor(dist / detail);
 
-    // gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     for(let k = 0; k < parts; k++) {
 
         let rr = 0.026 + .046*(1-currntSat)*(1-currntVal);
@@ -397,10 +397,14 @@ function drawQuad(x, y, size, angle=0) {
         
         gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     }
-    // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // gl.disable(gl.DEPTH_TEST);
     // gl.clearColor(.33, .33, .33, 1.0);
     // gl.clear(gl.COLOR_BUFFER_BIT);
-    // renderFramebufferToScreen(gl, screentex);
+    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    renderFramebufferToScreen(gl, screentex);
 
     // Draw framebuffer's texture to screen
 
