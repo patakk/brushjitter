@@ -117,6 +117,7 @@ gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, screentex, 0);
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
 function renderFramebufferToScreen(gl, framebufferTexture) {
     gl.useProgram(screenQuadProgramInfo.program);
@@ -354,7 +355,7 @@ function drawQuad(x, y, size, angle=0) {
     let dist = Math.sqrt((x - prevX) * (x - prevX) + (y - prevY) * (y - prevY));
     let parts = 2 + Math.floor(dist / detail);
 
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    // gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
     for(let k = 0; k < parts; k++) {
 
         let rr = 0.026 + .046*(1-currntSat)*(1-currntVal);
@@ -385,10 +386,10 @@ function drawQuad(x, y, size, angle=0) {
         
         gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.clearColor(.33, .33, .33, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    renderFramebufferToScreen(gl, screentex);
+    // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // gl.clearColor(.33, .33, .33, 1.0);
+    // gl.clear(gl.COLOR_BUFFER_BIT);
+    // renderFramebufferToScreen(gl, screentex);
 
     // Draw framebuffer's texture to screen
 
