@@ -589,7 +589,7 @@ canvas.addEventListener('touchmove', function(event) {
 
             // Use deltaY to control your dragVal. 
             // Depending on your needs, you might scale the value or use it directly.
-            dragVal = dragVal + deltaY * 0.0015;  // scale the value for smoother control
+            dragVal = dragVal - deltaY * 0.0015;  // scale the value for smoother control
             pickedVal = Math.max(0.0, Math.min(1.0, dragVal));
             initialTouchY = event.touches[0].clientY;
             initialTouchY2 = event.touches[1].clientY;
