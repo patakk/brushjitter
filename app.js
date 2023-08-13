@@ -557,3 +557,32 @@ else{
     glcanvas.addEventListener('click', newcolorpicked);
     glcanvas.addEventListener('mousemove', newcolorpicked);
 }
+
+let initialTouchY = null;
+let initialTouchY2 = null;  // for the second touch point
+
+document.addEventListener('touchstart', function(event) {
+    if (event.touches.length === 2) {
+        initialTouchY = event.touches[0].clientY;
+        initialTouchY2 = event.touches[1].clientY;
+    } else {
+        initialTouchY = null;
+        initialTouchY2 = null;
+    }
+}, { passive: false });
+
+document.addEventListener('touchmove', function(event) {
+    if (initialTouchY !== null && initialTouchY2 !== null) {
+        // Calculate the change in Y position for the average of two fingers
+        let deltaY = ((event.touches[0].clientY - initialTouchY) + (event.touches[1].clientY - initialTouchY2)) / 2;
+
+        // Use deltaY to control your dragVal. 
+        // Depending on your needs, you might scale the value or use it directly.
+        pickedVal = max(0.0, min(1.0, pickedVal + deltaY * 0.01));  // scale the value for smoother control
+        initialTouchY = event.touches[0].clientY;
+        initialTouchY2 = event.touches[1].clientY;
+
+        slider.value = pickedVal;
+        event.preventDefault();  // This prevents the page from scrolling
+    }
+}, { passive: false });
