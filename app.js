@@ -270,7 +270,7 @@ function handleEnd(event) {
     }
     mouseDown = false;
 
-    let rrn = .05 + .05 * (-1 + 2 * Math.random())*(1-currntSat)*(1-currntVal);
+    let rrn = (.05 + .05*(1-currntSat)*(1-currntVal)) * (-1 + 2 * Math.random());
     currntHue = (pickedHue + rrn + 1.) % 1.;
     currntSat = pickedSat;
     currntVal = pickedVal;
