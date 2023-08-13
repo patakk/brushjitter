@@ -179,7 +179,10 @@ const programInfo2 = {
         uHueSatVal: gl2.getUniformLocation(shaderProgram2, 'uHueSatVal')  // Added line
     },
 };
-document.getElementById('valueSlider').addEventListener('input', (event) => {
+
+let hueSlider = document.getElementById('valueSlider');
+
+hueSlider.addEventListener('input', (event) => {
 
     pickedVal = event.target.value / 100.0;
     currntHue = pickedHue;
@@ -590,7 +593,8 @@ document.addEventListener('touchmove', function(event) {
         initialTouchY2 = event.touches[1].clientY;
         event.preventDefault();
 
-        slider.value = pickedVal;
+        drawColorPicker(); // Make sure to only redraw the color picker, not the entire scene.
+        hueSlider.value = pickedVal;
     }
 }, { passive: false });
 
