@@ -585,19 +585,26 @@ canvas.addEventListener('touchmove', function(event) {
     if (initialTouchY !== null && initialTouchY2 !== null) {
         // Calculate the change in Y position for the average of two fingers
         debugelement.innerHTML = "touchmove 11112 ";
-        let deltaY = ((event.touches[0].clientY - initialTouchY) + (event.touches[1].clientY - initialTouchY2)) / 2;
 
-        // Use deltaY to control your dragVal. 
-        // Depending on your needs, you might scale the value or use it directly.
-        dragVal = dragVal + deltaY * 0.3;  // scale the value for smoother control
-        pickedVal = max(0.0, min(1.0, dragVal));
-        debugelement.innerHTML = "touchmove 22222 " + pickedVal + 'hh';
-        initialTouchY = event.touches[0].clientY;
-        initialTouchY2 = event.touches[1].clientY;
-        event.preventDefault();
+        if (event.touches.length === 2) {
+            
+            let deltaY = ((event.touches[0].clientY - initialTouchY) + (event.touches[1].clientY - initialTouchY2)) / 2;
 
-        drawColorPicker(); // Make sure to only redraw the color picker, not the entire scene.
-        hueSlider.value = pickedVal;
+            // Use deltaY to control your dragVal. 
+            // Depending on your needs, you might scale the value or use it directly.
+            dragVal = dragVal + deltaY * 0.3;  // scale the value for smoother control
+            pickedVal = max(0.0, min(1.0, dragVal));
+            debugelement.innerHTML = "touchmove 22222 " + pickedVal + 'hh';
+            initialTouchY = event.touches[0].clientY;
+            initialTouchY2 = event.touches[1].clientY;
+            event.preventDefault();
+
+            drawColorPicker(); // Make sure to only redraw the color picker, not the entire scene.
+            hueSlider.value = pickedVal;
+        } else {
+            initialTouchY = null;
+            initialTouchY2 = null;
+        }
     }
 
 }, { passive: false });
