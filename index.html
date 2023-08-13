@@ -9,21 +9,53 @@
         <title>WebGL Drawing App</title>
         <style>
             body {
-                background-color: #456789;
+                background-color: #636363;
                 margin: 0;
                 padding: 0;
                 overflow: hidden;
             }
 
-            #sliderContainer {
-                position: fixed;
-                top: 10px;
-                left: 50%;
-                transform: translateX(-50%);
-                z-index: 1000;  /* Ensures it's on top of other elements */
-                background: rgba(255, 255, 255, 0.8);  /* Semi-transparent white background */
-                padding: 10px;
-                border-radius: 5px;
+            #canvas {
+                position: absolute;
+                top: 0;
+                left: 0;
+                z-index: 1;
+            }
+
+            #glCanvas {
+                position: absolute;
+                left: 114px;
+                top: 44px;
+                z-index: 3;
+                border: #000000;
+                border-style: solid;
+                border-width: 3px;
+            }
+
+            #valueSlider {
+                position: absolute;
+                left: 66px;
+                top: 44px;
+                z-index: 12;
+                writing-mode: bt-lr; /* old syntax for IE */
+                -webkit-appearance: slider-vertical; /* Webkit browsers, like Chrome and Safari */
+                width: 8px; /* Thickness of the slider */
+                height: 150px; /* Height of the slider */
+                margin: 0 10px; /* Space on the sides to make it easier to grab */
+                outline: none; 
+            }
+            
+            #brushSizeSlider {
+                position: absolute;
+                left: 33px;
+                top: 44px;
+                z-index: 12;
+                writing-mode: bt-lr; /* old syntax for IE */
+                -webkit-appearance: slider-vertical; /* Webkit browsers, like Chrome and Safari */
+                width: 8px; /* Thickness of the slider */
+                height: 150px; /* Height of the slider */
+                margin: 0 10px; /* Space on the sides to make it easier to grab */
+                outline: none; 
             }
 
         </style>
@@ -31,10 +63,9 @@
 
     <body>
         <canvas id="canvas"></canvas>
-        <input id="colorPicker" class="jscolor" onchange="updateColor(this.jscolor)">
-        <div id="sliderContainer">
-            <input type="range" id="brushSizeSlider" min="1" max="100" value="50">
-        </div>
+        <canvas id="glCanvas" width="200" height="200"></canvas>
+        <input id="valueSlider" type="range" min="0" max="100" value="50"/>
+        <input id="brushSizeSlider" type="range" min="0" max="100" value="50"/>
 
         <script src="app.js"></script>
     </body>

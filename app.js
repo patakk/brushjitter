@@ -1,10 +1,16 @@
 const canvas = document.getElementById('canvas');
+const glcanvas = document.getElementById('glCanvas');
+
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
 const gl = canvas.getContext('webgl', { preserveDrawingBuffer: true });
+const gl2 = glcanvas.getContext('webgl', { preserveDrawingBuffer: true });
 gl.enable(gl.BLEND);
 gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+
+
 // gl.clearColor(1.0, 1.0, 1.0, 1.0);
 // gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -43,6 +49,171 @@ const fsSource = `
     }
 `;
 
+let pickedHue = 0.5;
+let pickedSat = 0.5;
+let pickedVal = 0.5;
+let currntHue = 0.5;
+let currntSat = 0.5;
+let currntVal = 0.5;
+let brushSize = 30.0;  // Change this to adjust the size
+let brushColor = [1.0, 0.0, 0.0, 1.0];  // Red color
+let mouseDown = false;
+
+let colorPickerBuffer;
+function createColorPickerBuffer() {
+    const vertices = new Float32Array([
+        -1.0,  1.0,
+         1.0,  1.0,
+        -1.0, -1.0,
+         1.0, -1.0,
+    ]);
+
+    colorPickerBuffer = gl2.createBuffer();
+    gl2.bindBuffer(gl2.ARRAY_BUFFER, colorPickerBuffer);
+    gl2.bufferData(gl2.ARRAY_BUFFER, vertices, gl2.STATIC_DRAW);
+
+    gl2.uniform1f(programInfo2.uniformLocations.uValue, currntVal);
+
+}
+
+
+
+// Shader sources (You can use separate shaders for the color picker)
+const vsSource2 = `
+    attribute vec2 aVertexPosition;
+    void main(void) {
+        gl_Position = vec4(aVertexPosition, 0.0, 1.0);
+    }
+`;
+
+const fsSource2 = `
+    precision mediump float;
+    uniform vec3 uHueSatVal;
+    
+    float lum(float r, float g, float b) {
+        return sqrt(0.299*r*r + 0.587*g*g + 0.114*b*b);
+    }
+
+
+    float hue2rgb(float p, float q, float t) {
+        if (t < 0.0) t += 1.0;
+        if (t > 1.0) t -= 1.0;
+        if (t < 1.0 / 6.0) return p + (q - p) * 6.0 * t;
+        if (t < 0.5) return q;
+        if (t < 2.0 / 3.0) return p + (q - p) * (2.0 / 3.0 - t) * 6.0;
+        return p;
+    }
+
+    vec3 hsl2rgb(float h, float s, float l) {
+
+        float r, g, b;
+        if (s == 0.0) {
+            r = g = b = l; // achromatic
+        } else {
+            float q = l < 0.5 ? l * (1.0 + s) : l + s - l * s;
+            float p = 2.0 * l - q;
+            r = hue2rgb(p, q, h + 1.0 / 3.0);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1.0 / 3.0);
+        }
+
+        return vec3(r, g, b);
+    }
+
+    vec3 hsx2rgb(float hue, float sat, float targetLuminance) {
+        
+        vec3 color = hsl2rgb(hue, sat, targetLuminance);
+        const float epsilon = 0.001;
+        float low = 0.0;
+        float high = 1.0;
+        float mid;
+
+        for(int i = 0; i < 16; i++) { // Limiting the number of iterations for performance
+            mid = (low + high) * 0.5;
+            vec3 rgb = hsl2rgb(hue, sat, mid);
+            float currentLum = lum(rgb.r, rgb.g, rgb.b);
+
+            if (currentLum < targetLuminance) {
+                low = mid;
+            } else {
+                high = mid;
+            }
+
+            if (high - low < epsilon) {
+                break; 
+            }
+        }
+
+        return hsl2rgb(hue, sat, mid);
+    }
+
+    void main(void) {
+        vec3 color = hsx2rgb(gl_FragCoord.x / 200.0, gl_FragCoord.y / 200.0, uHueSatVal.b);
+
+        float dist = distance(gl_FragCoord.xy, vec2(200.0*uHueSatVal.r, 200.0*uHueSatVal.g));
+
+        float mask1 = smoothstep(10.0, 11.0, dist);
+        float mask2 = 1. - smoothstep(11.0, 12.0, dist);
+        float mask = mask1 * mask2;
+
+        float ringval = 1.0;
+        if(uHueSatVal.b > 0.55)
+            ringval = 0.0;
+        color = mix(color, vec3(ringval), mask);
+
+        gl_FragColor = vec4(color.rgb, 1.0);
+    }
+`;
+
+
+const shaderProgram2 = initShaderProgram(gl2, vsSource2, fsSource2);
+const programInfo2 = {
+    program: shaderProgram2,
+    attribLocations: {
+        vertexPosition: gl2.getAttribLocation(shaderProgram2, 'aVertexPosition'),
+    },
+    uniformLocations: {
+        uHueSatVal: gl2.getUniformLocation(shaderProgram2, 'uHueSatVal')  // Added line
+    },
+};
+document.getElementById('valueSlider').addEventListener('input', (event) => {
+
+    pickedVal = event.target.value / 100.0;
+    currntHue = pickedHue;
+    currntSat = pickedSat;
+    currntVal = pickedVal;
+
+    // Update WebGL shader uniform and redraw
+    drawColorPicker(); // Make sure to only redraw the color picker, not the entire scene.
+});
+
+function drawColorPicker() {
+    
+
+    // Bind the color picker buffer
+    gl2.useProgram(shaderProgram2);
+    gl2.uniform3f(programInfo2.uniformLocations.uHueSatVal, pickedHue, pickedSat, pickedVal);
+    gl2.bindBuffer(gl2.ARRAY_BUFFER, colorPickerBuffer);
+    
+    // Set the vertex attribute pointers for the color picker
+    gl2.enableVertexAttribArray(programInfo2.attribLocations.vertexPosition);
+    gl2.vertexAttribPointer(programInfo2.attribLocations.vertexPosition, 2, gl2.FLOAT, false, 0, 0);
+
+    // Render to the canvas
+    gl2.disable(gl2.BLEND);
+
+    gl2.clearColor(1.0, 0.0, 0.0, 1.0);
+    gl2.clear(gl2.COLOR_BUFFER_BIT);
+
+    gl2.useProgram(shaderProgram2);
+    gl2.drawArrays(gl2.TRIANGLE_STRIP, 0, 4);
+}
+
+// Initial draw of the color picker
+createColorPickerBuffer();
+drawColorPicker();
+
+
 const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
 const programInfo = {
     program: shaderProgram,
@@ -57,30 +228,34 @@ const programInfo = {
     },
 };
 
+function lum(r, g, b) {
+    return Math.sqrt(0.299 * r * r + 0.587 * g * g + 0.114 * b * b);
+}
+
+function hue2rgb(p, q, t) {
+    if (t < 0.0) t += 1.0;
+    if (t > 1.0) t -= 1.0;
+    if (t < 1.0 / 6.0) return p + (q - p) * 6.0 * t;
+    if (t < 0.5) return q;
+    if (t < 2.0 / 3.0) return p + (q - p) * (2.0 / 3.0 - t) * 6.0;
+    return p;
+}
+
 function hsl2rgb(h, s, l) {
-    function hue2rgb(p, q, t) {
-        if (t < 0) t += 1;
-        if (t > 1) t -= 1;
-        if (t < 1 / 6) return p + (q - p) * 6 * t;
-        if (t < 1 / 2) return q;
-        if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-        return p;
-    }
-
     let r, g, b;
-
-    if (s === 0) {
+    if (s === 0.0) {
         r = g = b = l; // achromatic
     } else {
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-        const p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1 / 3);
+        const q = l < 0.5 ? l * (1.0 + s) : l + s - l * s;
+        const p = 2.0 * l - q;
+        r = hue2rgb(p, q, h + 1.0 / 3.0);
         g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1 / 3);
+        b = hue2rgb(p, q, h - 1.0 / 3.0);
     }
 
     return [r, g, b];
 }
+
 
 function rgb2hsl(r, g, b) {
     const max = Math.max(r, g, b);
@@ -110,6 +285,32 @@ function rgb2hsl(r, g, b) {
     }
 
     return [h, s, l];
+}
+
+function hsx2rgb(hue, sat, targetLuminance) {
+    let color = hsl2rgb(hue, sat, targetLuminance);
+    const epsilon = 0.001;
+    let low = 0.0;
+    let high = 1.0;
+    let mid;
+
+    for (let i = 0; i < 16; i++) {
+        mid = (low + high) * 0.5;
+        let rgb = hsl2rgb(hue, sat, mid);
+        let currentLum = lum(rgb[0], rgb[1], rgb[2]);
+
+        if (currentLum < targetLuminance) {
+            low = mid;
+        } else {
+            high = mid;
+        }
+
+        if (high - low < epsilon) {
+            break; 
+        }
+    }
+
+    return hsl2rgb(hue, sat, mid);
 }
 
 function rgb2hsb(r, g, b) {
@@ -162,110 +363,72 @@ function calculateLuminance(r, g, b) {
 }
 
 
-let brushSize = 30.0;  // Change this to adjust the size
-let brushColor = [1.0, 0.0, 0.0, 1.0];  // Red color
-let mouseDown = false;
-let baseHue0 = Math.random();
-let baseSat = Math.random();
-let baseBri = Math.random();
-let baseHue = baseHue0;
-let baseColorHSL = [baseHue, baseSat, baseBri];
-// baseColorHSL = [.6, baseSat, baseBri];
-let baseColor = hsl2rgb(baseColorHSL[0], baseColorHSL[1], baseColorHSL[2]);
-let lightnessBase0 = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]);
-
-
-// canvas.addEventListener('mousemove', (event) => {
-//     if (event.buttons == 1) {
-
-//         drawQuad(event.clientX, event.clientY, brushSize);
-//         // drawQuad(event.clientX, event.clientY, brushSize, [lightnessRand, lightnessRand, lightnessRand, 1.0]);
-//         mouseDown = true;
-//     }
-// });
-// canvas.addEventListener('mouseup', (event) => {
-
-//     baseHue = (baseHue0 + .1 * (-1 + 2 * Math.random()) + 1.) % 1.;
-//     baseColorHSL = [baseHue, baseSat, baseBri];
-//     baseColor = hsl2rgb(baseColorHSL[0], baseColorHSL[1], baseColorHSL[2]);
-
-//     for (let k = 0; k < 4; k++) {
-//         let lightnessRand = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]);
-//         let scale = lightnessBase0 / lightnessRand;
-//         baseColor = baseColor.map(x => x * scale);
-//         baseColor = baseColor.map(x => Math.min(x, 1.0));
-//     }
-
-//     baseColorHSL = rgb2hsl(baseColor[0], baseColor[1], baseColor[2]);
-
-//     mouseDown = false;
-
-//     picker.jscolor.show();
-// });
-
 function handleDrawing(event) {
-
     const x = event.clientX;
     const y = event.clientY;
-
-    if(event.pressure < 0.05){
-        handleEnd(event);
-        prevX = x;
-        prevY = y;
-        return;
-    }
 
     // Prevent default behavior to stop things like scrolling.
     event.preventDefault();
 
-
     event.preventDefault();
-    picker.jscolor.show();
 
+    if(!mouseDown){
+        return;
+    }
 
     // Ensure we're dealing with pen input (Apple Pencil or other stylus devices).
     drawQuad(x, y, brushSize);
 }
 
 function handleEnd(event) {
-    baseHue = (baseHue0 + .1 * (-1 + 2 * Math.random()) + 1.) % 1.;
-    baseColorHSL = [baseHue, baseSat, baseBri];
-    baseColor = hsl2rgb(baseColorHSL[0], baseColorHSL[1], baseColorHSL[2]);
-
-    for (let k = 0; k < 4; k++) {
-        let lightnessRand = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]);
-        let scale = lightnessBase0 / lightnessRand;
-        baseColor = baseColor.map(x => x * scale);
-        baseColor = baseColor.map(x => Math.min(x, 1.0));
-    }
-
-    baseColorHSL = rgb2hsl(baseColor[0], baseColor[1], baseColor[2]);
-
     mouseDown = false;
-    picker.jscolor.show();
+
+    let rrn = .15 * (-1 + 2 * Math.random());
+    currntHue = (pickedHue + rrn + 1.) % 1.;
+    currntSat = pickedSat;
+    currntVal = pickedVal;
 }
 
-canvas.addEventListener('pointermove', handleDrawing);
+function handleDown(event) {
+    const x = event.clientX;
+    const y = event.clientY;
+    if(!mouseDown){
+        prevX = x;
+        prevY = y;
+        mouseDown = true;
+    }
+
+}
+
+canvas.addEventListener('mousemove', handleDrawing);
+canvas.addEventListener('mousedown', handleDown);
+canvas.addEventListener('mouseup', handleEnd);
 // canvas.addEventListener('pointerup', handleEnd);
 
 
+function initShaderProgram(gll, vsSource, fsSource) {
+    const vertexShader = loadShader(gll, gll.VERTEX_SHADER, vsSource);
+    const fragmentShader = loadShader(gll, gll.FRAGMENT_SHADER, fsSource);
 
-function initShaderProgram(gl, vsSource, fsSource) {
-    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
-    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
-
-    const shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
+    const shaderProgram = gll.createProgram();
+    gll.attachShader(shaderProgram, vertexShader);
+    gll.attachShader(shaderProgram, fragmentShader);
+    gll.linkProgram(shaderProgram);
 
     return shaderProgram;
 }
 
-function loadShader(gl, type, source) {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
+function loadShader(gll, type, source) {
+    const shader = gll.createShader(type);
+    gll.shaderSource(shader, source);
+    gll.compileShader(shader);
+
+    if (!gll.getShaderParameter(shader, gll.COMPILE_STATUS)) {
+        console.error('An error occurred compiling the shaders: ' + gll.getShaderInfoLog(shader));
+        gll.deleteShader(shader);
+        return null;
+    }
+
     return shader;
 }
 
@@ -293,21 +456,9 @@ function drawQuad(x, y, size) {
 
     for(let k = 0; k < parts; k++) {
 
-        let rr = 0.06 + .06*(1-baseSat);
-        let randColorHSL = [(baseColorHSL[0] + rr * (-1 + 2 * Math.random()) + 1) % 1, baseColorHSL[1], baseColorHSL[2]];
+        let rr = 0.06 + .06*(1-currntSat);
 
-        let randColor = hsl2rgb(randColorHSL[0], randColorHSL[1], randColorHSL[2]);
-        let baseColor = hsl2rgb(baseColorHSL[0], baseColorHSL[1], baseColorHSL[2]);
-        let lightnessBase = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]);
-
-        for (let k = 0; k < 4; k++) {
-            let lightnessRand = calculateLuminance(randColor[0], randColor[1], randColor[2]);
-            let scale = lightnessBase / lightnessRand;
-            randColor = randColor.map(x => x * scale);
-            randColor = randColor.map(x => Math.min(x, 1.0));
-        }
-
-
+        let randColor = hsx2rgb((currntHue + rr * (-1 + 2 * Math.random()) + 1) % 1, currntSat, currntVal);
 
         let xx = prevX + (x - prevX) * k / parts;
         let yy = prevY + (y - prevY) * k / parts;
@@ -334,7 +485,7 @@ function drawQuad(x, y, size) {
     prevY = y;
 }
 function hsl2hsb(h, s, l) {
-    const [r, g, b] = hsl2rgb(h, s, l);
+    const [r, g, b] = hsx2rgb(h, s, l);
     return rgb2hsb(r, g, b);
 }
 
@@ -343,22 +494,6 @@ function hsb2hsl(h, s, br) {
     return rgb2hsl(r, g, b);
 }
 
-
-function updateColor(jscolor) {
-
-    baseHue0 = jscolor.channels.h / 360;
-    baseSat = jscolor.channels.s / 100;
-    baseBri = jscolor.channels.v / 100;
-    afajsl = hsb2hsl(baseHue0, baseSat, baseBri);
-    baseHue0 = afajsl[0];
-    baseSat = afajsl[1];
-    baseBri = afajsl[2];
-    baseHue = baseHue0;
-    baseColorHSL = [baseHue, baseSat, baseBri];
-    // baseColorHSL = [.6, baseSat, baseBri];
-    baseColor = hsl2rgb(baseColorHSL[0], baseColorHSL[1], baseColorHSL[2]);
-    lightnessBase0 = calculateLuminance(baseColor[0], baseColor[1], baseColor[2]);
-}
 
 document.addEventListener('keydown', (e) => {
     if (e.key === 'c') {
@@ -369,12 +504,33 @@ document.addEventListener('keydown', (e) => {
 
 let picker;
 document.addEventListener('DOMContentLoaded', () => {
-    picker = document.getElementById('colorPicker');
+    
 });
 
 const brushSizeSlider = document.getElementById('brushSizeSlider');
 
 brushSizeSlider.addEventListener('input', function () {
     brushSize = parseFloat(brushSizeSlider.value) / 100 * 70 + 10;  // Convert range from [1, 100] to [0.01, 1]
-    // You may adjust the formula above based on your requirements
+});
+
+function newcolorpicked(event){
+    var boundingRect = event.target.getBoundingClientRect();
+    pickedHue = (event.clientX - boundingRect.left) / boundingRect.width;
+    pickedSat = 1. - (event.clientY - boundingRect.top) / boundingRect.height;
+    currntHue = pickedHue;
+    currntSat = pickedSat;
+    currntVal = pickedVal;
+
+    drawColorPicker(); // Make sure to only redraw the color picker, not the entire scene.
+}
+
+document.getElementById('glCanvas').addEventListener('click', function(event) {
+    newcolorpicked(event);
+});
+
+// handle draggin mouse
+document.getElementById('glCanvas').addEventListener('mousemove', function(event) {
+    if (event.buttons == 1) {
+        newcolorpicked(event);
+    }
 });
