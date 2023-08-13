@@ -596,7 +596,7 @@ canvas.addEventListener('touchmove', function(event) {
             event.preventDefault();
 
             drawColorPicker(); // Make sure to only redraw the color picker, not the entire scene.
-            hueSlider.value = pickedVal;
+            hueSlider.value = pickedVal*100;
         } else {
             initialTouchY = null;
             initialTouchY2 = null;
