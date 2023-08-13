@@ -369,14 +369,16 @@ function handleDrawing(event) {
 
     // Prevent default behavior to stop things like scrolling.
     event.preventDefault();
-
     event.preventDefault();
+
+    if (event.pointerType === 'pen' && event.pressure === 0) {
+        return;
+    }
 
     if(!mouseDown){
         return;
     }
 
-    // Ensure we're dealing with pen input (Apple Pencil or other stylus devices).
     drawQuad(x, y, brushSize);
 }
 
@@ -392,18 +394,28 @@ function handleEnd(event) {
 function handleDown(event) {
     const x = event.clientX;
     const y = event.clientY;
+
+    if(event.pointerType === 'pen' && event.pressure === 0) {
+        return;
+    }
+
     if(!mouseDown){
         prevX = x;
         prevY = y;
         mouseDown = true;
+        handleDrawing(event);
     }
 
 }
 
+canvas.addEventListener('pointermove', handleDrawing);
+canvas.addEventListener('pointerdown', handleDown);
+canvas.addEventListener('pointerup', handleEnd);
+canvas.addEventListener('pointerout', handleEnd);
+
 canvas.addEventListener('mousemove', handleDrawing);
 canvas.addEventListener('mousedown', handleDown);
 canvas.addEventListener('mouseup', handleEnd);
-// canvas.addEventListener('pointerup', handleEnd);
 
 
 function initShaderProgram(gll, vsSource, fsSource) {
