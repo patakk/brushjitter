@@ -580,7 +580,7 @@ document.addEventListener('touchstart', function(event) {
 }, { passive: false });
 
 let dragVal = pickedVal;
-document.addEventListener('touchmove', function(event) {
+canvas.addEventListener('touchmove', function(event) {
     debugelement.innerHTML = "touchmove " + (initialTouchY !== null) + " " + (initialTouchY2 !== null);
     if (initialTouchY !== null && initialTouchY2 !== null) {
         // Calculate the change in Y position for the average of two fingers
@@ -602,7 +602,7 @@ document.addEventListener('touchmove', function(event) {
 }, { passive: false });
 
 
-document.addEventListener('touchend', function(event) {
+canvas.addEventListener('touchend', function(event) {
     debugelement.innerHTML = "touchend";
     initialTouchY = null;
     initialTouchY2 = null;
