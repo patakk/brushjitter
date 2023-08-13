@@ -563,8 +563,8 @@ else{
     glcanvas.addEventListener('mousemove', newcolorpicked);
 }
 
-let initialTouchY = null;
-let initialTouchY2 = null;  // for the second touch point
+let initialTouchY = 0.0;
+let initialTouchY2 = 0.0;  // for the second touch point
 
 document.addEventListener('touchstart', function(event) {
     debugelement.innerHTML = "touchstart";
@@ -585,7 +585,7 @@ canvas.addEventListener('touchmove', function(event) {
     if (initialTouchY !== null && initialTouchY2 !== null) {
         // Calculate the change in Y position for the average of two fingers
         let numtouches = event.touches.length;
-        debugelement.innerHTML = "touchmove 11112 " + (numtouches == 2);
+        debugelement.innerHTML = "touchmove 11112 " + event.touches[0].clientY;
 
         if (numtouches == 2) {
             
