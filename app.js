@@ -581,7 +581,7 @@ document.addEventListener('touchstart', function(event) {
 
 let dragVal = pickedVal;
 document.addEventListener('touchmove', function(event) {
-    debugelement.innerHTML = "touchmove";
+    debugelement.innerHTML = "touchmove " + initialTouchY + " " + initialTouchY2;
     if (initialTouchY !== null && initialTouchY2 !== null) {
         // Calculate the change in Y position for the average of two fingers
         let deltaY = ((event.touches[0].clientY - initialTouchY) + (event.touches[1].clientY - initialTouchY2)) / 2;
