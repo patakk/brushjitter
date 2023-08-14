@@ -47,13 +47,13 @@ glcanvas = document.getElementById('pickerCanvas');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-gl = canvas.getContext('webgl2', { preserveDrawingBuffer: true });
-gl_picker = glcanvas.getContext('webgl2', { preserveDrawingBuffer: true });
+gl = canvas.getContext('webgl', { preserveDrawingBuffer: true, antialias: true });
+gl_picker = glcanvas.getContext('webgl', { preserveDrawingBuffer: true, antialias: true });
 
 isIpad = /iPad|Macintosh/.test(navigator.userAgent) && 'ontouchend' in document;
 isPC = !isIpad;
 
-gl.clearColor(.933, .33, .33, 1.0);
+gl.clearColor(.33, .33, .33, 1.0);
 gl.clear(gl.COLOR_BUFFER_BIT);
 
 colorPickerBuffer = createQuadBuffer(gl_picker);
@@ -421,7 +421,7 @@ function drawQuad(x, y, size, angle=0) {
     gl.viewport(0, 0, canvas.width, canvas.height);
 
     // gl.disable(gl.DEPTH_TEST);
-    gl.clearColor(.933, .33, .33, 1.0);
+    gl.clearColor(.33, .33, .33, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
