@@ -90,6 +90,7 @@ drawingProgramInfo = {
     uniformLocations: {
         brushColor: gl.getUniformLocation(drawingProgram, 'uBrushColor'),
         secondColor: gl.getUniformLocation(drawingProgram, 'uSecondColor'),
+        isBump: gl.getUniformLocation(drawingProgram, 'uIsBump'),
         time: gl.getUniformLocation(drawingProgram, 'uTime'),
         position: gl.getUniformLocation(drawingProgram, 'uPosition'),
         size: gl.getUniformLocation(drawingProgram, 'uSize'),
@@ -110,6 +111,7 @@ screenQuadProgramInfo = {
     },
     uniformLocations: {
         texture: gl.getUniformLocation(screenQuadProgram, 'uTexture'),
+        bumpTexture: gl.getUniformLocation(screenQuadProgram, 'uBumpTexture'),  // Add this
         resolution: gl.getUniformLocation(screenQuadProgram, 'uResolution'),
     }
 };
@@ -137,6 +139,18 @@ gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, screentexsmall, 0);
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+
+const framebufferbump = gl.createFramebuffer();
+gl.bindFramebuffer(gl.FRAMEBUFFER, framebufferbump);
+const screentexbump = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, screentexbump);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, canvas.width, canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, screentexbump, 0);
 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
 
@@ -312,9 +326,21 @@ let angle = 0;
 let prevXa = 0;
 let prevYa = 0;
 
+let sx = null;
+let sy = null;
+let ssx = null;
+let ssy = null;
+
 function handleDrawing(event) {
-    const x = event.clientX;
-    const y = event.clientY;
+
+    if(ssx == null && ssy == null){
+        ssx = event.clientX;
+        ssy = event.clientY;
+    }
+    else{
+        ssx = ssx + .7*(event.clientX - ssx);
+        ssy = ssy + .7*(event.clientY - ssy);
+    }
 
     // Prevent default behavior to stop things like scrolling.
     event.preventDefault();
@@ -343,8 +369,8 @@ function handleDrawing(event) {
     }
 
         
-    let dist = Math.sqrt((x - prevXa) * (x - prevXa) + (y - prevYa) * (y - prevYa));
-    let vector = [x - prevXa, y - prevYa];
+    let dist = Math.sqrt((ssx - prevXa) * (ssx - prevXa) + (ssy - prevYa) * (ssy - prevYa));
+    let vector = [ssx - prevXa, ssy - prevYa];
     let normalized = [vector[0] / dist, vector[1] / dist];
     if(dist > 5){
         angle = angle + 0.991*(Math.atan2(normalized[1], normalized[0])-angle);
@@ -353,7 +379,7 @@ function handleDrawing(event) {
         }
     }
 
-    drawQuad(x, y, brushSize, angle);
+    drawQuad(ssx, ssy, brushSize, angle);
 }
 
 function handleEnd(event) {
@@ -398,13 +424,19 @@ function handleDown(event) {
 let quadCount = 0;
 
 
-function renderFramebufferToScreen(gl, framebufferTexture) {
+function renderFramebufferToScreen(gl, framebufferTexture, bumpFramebufferTexture) {
     gl.useProgram(screenQuadProgramInfo.program);
 
     // Set the framebuffer's texture
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, framebufferTexture);
     gl.uniform1i(screenQuadProgramInfo.uniformLocations.texture, 0);
+
+    // Set the bump framebuffer's texture
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, bumpFramebufferTexture);
+    gl.uniform1i(screenQuadProgramInfo.uniformLocations.bumpTexture, 1);  // assuming your shader expects this as 'bumpTexture'
+
     gl.uniform2f(screenQuadProgramInfo.uniformLocations.resolution, canvas.width, canvas.height);
 
     // Bind and draw the full-screen quad
@@ -440,18 +472,24 @@ function drawQuad(x, y, size, angle=0) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
     gl.viewport(0, 0, canvas.width*2, canvas.height*2);
     //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    for(let kk = 0; kk < 2; kk++){
+    for(let kk = 0; kk < 3; kk++){
         if(kk == 0){
             gl.enable(gl.BLEND);
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
             gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
             gl.viewport(0, 0, canvas.width*2, canvas.height*2);
         }
-        else{
+        else if(kk == 1){
             gl.enable(gl.BLEND);
             gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
             gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffersmall);
             gl.viewport(0, 0, canvas.width/16, canvas.height/16);
+        }
+        else if(kk == 2){
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, framebufferbump);
+            gl.viewport(0, 0, canvas.width, canvas.height);
         }
         for(let k = 0; k < parts; k++) {
 
@@ -474,10 +512,15 @@ function drawQuad(x, y, size, angle=0) {
             // gl.uniform4fv(drawingProgramInfo.uniformLocations.brushColor, [randColor[0], randColor[1], randColor[2], 1.0]);
             gl.uniform4fv(drawingProgramInfo.uniformLocations.brushColor, [(currntHue + 0*rr * (-1 + 2 * Math.random()) + 1) % 1, currntSat, currntVal, 1.0]);
             gl.uniform4fv(drawingProgramInfo.uniformLocations.secondColor, secondColor);
-            gl.uniform1f(drawingProgramInfo.uniformLocations.time, quadCount++);
+            gl.uniform1f(drawingProgramInfo.uniformLocations.time, quadCount);
+            gl.uniform1f(drawingProgramInfo.uniformLocations.isBump, kk==2?1:0);
             gl.uniform2f(drawingProgramInfo.uniformLocations.resolution, canvas.width, canvas.height);
 
             dissipation = Math.max(0.0, dissipation - 0.001);
+
+            if(kk == 0){
+                quadCount++;
+            }
     
     
             // Bind vertex buffer
@@ -497,7 +540,7 @@ function drawQuad(x, y, size, angle=0) {
     // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    renderFramebufferToScreen(gl, screentex);
+    renderFramebufferToScreen(gl, screentex, screentexbump);
 
     // Draw framebuffer's texture to screen
 

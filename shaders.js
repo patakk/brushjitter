@@ -36,12 +36,13 @@ export const drawingFragmentShader = `
     uniform float uTime;
     uniform float uBrushJitter;
     uniform float uDissipation;
+    uniform float uIsBump;
     
     varying vec2 vUV;
     varying float vSize;
 
     
-    #define NUM_OCTAVES 8
+    #define NUM_OCTAVES 2
 
     
     float lum(float r, float g, float b) {
@@ -397,8 +398,11 @@ export const drawingFragmentShader = `
         float frq = vSize/3.;
         
         frq *= .6;
+        if(uIsBump > .5){
+            frq *= .6;
+        }
         float ff = fbm3(vUV.xy*frq*vec2(1., 1.), uTime*.001);
-        alpha *= smoothstep(0.5, 0.5+.2, ff);
+        alpha *= smoothstep(0.35, 0.35+.2, ff);
 
         float rr = uBrushJitter*0.4*(-1.+2.*fbm3(vUV.xy*17.+31.31, uTime*.01*0.+213.13));
 
@@ -411,7 +415,7 @@ export const drawingFragmentShader = `
         }
 
         float ff2 = fbm3(vUV.xy*frq*vec2(1., 1.)+314.4113, uTime*.001);
-        alpha = smoothstep(0.5, 0.5+.2, ff2);
+        // alpha = smoothstep(0.5, 0.5+.2, ff2);
         ff2 = pow(smoothstep(0.5, 0.5+.2, ff2), 2.);
 
         float gradx_fbm = fbm3(vUV.xy*frq*vec2(1., 1.)+314.4113 + vec2(0.04, 0.), uTime*.001) - fbm3(vUV.xy*frq*vec2(1., 1.)+314.4113 - vec2(0.04, 0.), uTime*.001);
@@ -420,17 +424,36 @@ export const drawingFragmentShader = `
         vec2 grad_fbm = vec2(gradx_fbm, grady_fbm);
         grad_fbm = normalize(grad_fbm);
 
-        vec2 lightdir = vec2(0.5, 0.5) / length(vec2(0.5, 0.5));
+        vec2 lightdir = vec2(0.5, 0.5);
+        lightdir = normalize(lightdir);
 
-        float light = dot(grad_fbm, lightdir);
-        // light = (light+1.0)/2.;
-
+        vec2 xxyy = vUV.xy;
+        frq = vSize/8.;
+        xxyy.x += 1.3*(-1. + 2.*fbm3(xxyy*frq*vec2(1., 1.)+314.4113, 9.*uTime*.001));
+        xxyy.y += 1.3*(-1. + 2.*fbm3(xxyy*frq*vec2(1., 1.)+223.123, 9.*uTime*.001));
+        float light = dot(xxyy-.5, lightdir);
+        light = (light+1.0)/2.;
+        light = clamp(light, 0.0, 1.0);
 
         // gl_FragColor = vec4(brushRgb.rgb*alpha, alpha); // using alpha
         gl_FragColor = vec4(brushRgb.rgb*alpha, alpha); // using alpha
         gl_FragColor = vec4(vec3(ff2), alpha); // using alpha
-        gl_FragColor = vec4(brushRgb.rgb*alpha+vec3(light*.02)*alpha, alpha); // using alpha
+        gl_FragColor = vec4(brushRgb.rgb*alpha, alpha); // using alpha
 
+        if(uIsBump > .5){
+            // gl_FragColor = vec4(vec3(light)*light*light*light*light, .15*light); // using alpha
+
+
+            float dist1 = distance(xxyy, vec2(0.5, 0.5));
+            float dist2 = dist1;
+            dist1 = 1. - dist1;
+            dist2 = 1. - dist2;
+            dist1 = 1.-smoothstep(0.2, .5, dist1);
+            dist2 = smoothstep(0.3, .5, dist2);
+            gl_FragColor = vec4(vec3(dist1), dist1);
+            gl_FragColor = vec4(vec3(dist2), dist1);
+            gl_FragColor = vec4(vec3(light)*light, light);
+        }
     }
 `;
 
@@ -902,13 +925,71 @@ export const screenFragmentQuadSource = `
     uniform vec2 uResolution;
 
     uniform sampler2D uTexture;
+    uniform sampler2D uBumpTexture;
 
-    float lum(vec4 cc) {
-        float r = cc.r;
-        float g = cc.g;
-        float b = cc.b;
+    float lum(float r, float g, float b) {
         return sqrt(0.299*r*r + 0.587*g*g + 0.114*b*b);
         // return sqrt(0.2126*r + 0.7152*g + 0.0722*b);
+    }
+
+
+    float hue2rgb(float p, float q, float t) {
+        if (t < 0.0) t += 1.0;
+        if (t > 1.0) t -= 1.0;
+        if (t < 1.0 / 6.0) return p + (q - p) * 6.0 * t;
+        if (t < 0.5) return q;
+        if (t < 2.0 / 3.0) return p + (q - p) * (2.0 / 3.0 - t) * 6.0;
+        return p;
+    }
+
+    vec3 hsl2rgb(float h, float s, float l) {
+
+        float r, g, b;
+        if (s == 0.0) {
+            r = g = b = l; // achromatic
+        } else {
+            float q = l < 0.5 ? l * (1.0 + s) : l + s - l * s;
+            float p = 2.0 * l - q;
+            r = hue2rgb(p, q, h + 1.0 / 3.0);
+            g = hue2rgb(p, q, h);
+            b = hue2rgb(p, q, h - 1.0 / 3.0);
+        }
+
+        return vec3(r, g, b);
+    }
+
+    vec3 hsx2rgb(float hue, float sat, float targetLuminance) {
+        
+        const float epsilon = 0.001;
+        float low = 0.0;
+        float high = 1.0;
+        float mid;
+
+        for(int i = 0; i < 16; i++) { // Limiting the number of iterations for performance
+            mid = (low + high) * 0.5;
+            vec3 rgb = hsl2rgb(hue, sat, mid);
+            float currentLum = lum(rgb.r, rgb.g, rgb.b);
+
+            if (currentLum < targetLuminance) {
+                low = mid;
+            } else {
+                high = mid;
+            }
+
+            if (high - low < epsilon) {
+                break; 
+            }
+        }
+
+        return hsl2rgb(hue, sat, mid);
+    }
+
+    
+    float power(float p, float g) {
+        if (p < 0.5)
+            return 0.5 * pow(2.*p, g);
+        else
+            return 1. - 0.5 * pow(2.*(1. - p), g);
     }
 
     void main() {
@@ -916,35 +997,49 @@ export const screenFragmentQuadSource = `
         vec2 coords = vTexCoords * uResolution;
 
         vec4 original = texture2D(uTexture, vTexCoords);
+        vec4 bumpTex = texture2D(uBumpTexture, vTexCoords);
 
-        // float gradx = lum(texture2D(uTexture, 1./uResolution*vec2(coords.x+1., coords.y))) - lum(texture2D(uTexture, 1./uResolution*vec2(coords.x-1., coords.y)));
-        // float grady = lum(texture2D(uTexture, 1./uResolution*vec2(coords.x, coords.y+1.))) - lum(texture2D(uTexture, 1./uResolution*vec2(coords.x, coords.y-1.)));
-        float gradx = texture2D(uTexture, 1./uResolution*vec2(coords.x+1., coords.y)).a - texture2D(uTexture, 1./uResolution*vec2(coords.x-1., coords.y)).a;
-        float grady = texture2D(uTexture, 1./uResolution*vec2(coords.x, coords.y+1.)).a - texture2D(uTexture, 1./uResolution*vec2(coords.x, coords.y-1.)).a;
+        float bump = bumpTex.r;
+        // bump = max(.4, bump);
+        // bump = pow(bump, 2.);
+        // bump = clamp(bump, 0., 1.);
+        // bump = .7+.3*bump;
+
+        float gradx = texture2D(uBumpTexture, vec2(vTexCoords.x+1./uResolution.x, vTexCoords.y)).r - texture2D(uBumpTexture, vec2(vTexCoords.x-1./uResolution.x, vTexCoords.y)).r;
+        float grady = texture2D(uBumpTexture, vec2(vTexCoords.x, vTexCoords.y+1./uResolution.y)).r - texture2D(uBumpTexture, vec2(vTexCoords.x, vTexCoords.y-1./uResolution.y)).r;
 
         vec2 grad = vec2(gradx, grady);
-        float mag = length(grad);
-        grad /= mag;
+        grad = normalize(grad);
+
+        vec2 lighdir = vec2(1., 1.);
+        lighdir = normalize(lighdir);
+
+        float d = dot(grad, lighdir);
+
+        float angle = atan(grad.y, grad.x);
+        angle = angle + 3.14;
+
+        d = abs(d);
+
+        vec3 color = hsx2rgb(angle/6.28, 1., d);
 
 
-        vec2 lightdir = vec2(0.5, 0.5) / length(vec2(0.5, 0.5));
+        // d = (d + 1.) / 2.;
 
-        float d = dot(grad, lightdir);
-        d = (d+1.)/2.;
-        d = clamp(d, 0., 1.)*2.-1.;
+        vec3 result = clamp(original.rgb + .05*(-.5+bump), 0., 1.);
 
-        gl_FragColor = vec4(d, d, d, 1.);
-
-        vec3 result = original.rgb;
-        result = mix(original.rgb, original.rgb*.6, d);
-        result = clamp(original.rgb+d*.4, 0., 1.);
-
-        gl_FragColor = vec4(grad.x*.5+.5, grad.y*.5+.5, 0., original.a);
-        gl_FragColor = vec4(d,d,d, original.a);
-        gl_FragColor = vec4(original.rgb, original.a);
-        gl_FragColor = vec4(original.aaa, original.a);
-        gl_FragColor = vec4(original.aaa, 1.);
-        gl_FragColor = vec4(original.rgb, original.a);
+        // gl_FragColor = vec4(grad.x*.5+.5, grad.y*.5+.5, 0., original.a);
+        // gl_FragColor = vec4(d,d,d, original.a);
+        // gl_FragColor = vec4(original.rgb, original.a);
+        // gl_FragColor = vec4(original.aaa, original.a);
+        // gl_FragColor = vec4(original.aaa, 1.);
+        // gl_FragColor = vec4(original.rgb, original.a);
+        // gl_FragColor = vec4(vec3(bump), original.a);
+        gl_FragColor = vec4(vec3(color), original.a);
+        gl_FragColor = vec4(vec3(original*bump), original.a);
+        gl_FragColor = vec4(vec3(texture2D(uBumpTexture, vTexCoords).rgb), 1.);
+        gl_FragColor = vec4(bumpTex.rgb, bumpTex.a);
+        gl_FragColor = vec4(result, original.a);
     }
 `;
 
