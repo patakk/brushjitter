@@ -311,6 +311,8 @@ function handleDrawing(event) {
     if(!mouseDown){
         return;
     }
+
+    debugelement.innerHTML = "x: " + x + " y: " + y;
         
     let dist = Math.sqrt((x - prevXa) * (x - prevXa) + (y - prevYa) * (y - prevYa));
     let vector = [x - prevXa, y - prevYa];
