@@ -304,7 +304,7 @@ function handleDrawing(event) {
     event.preventDefault();
     event.preventDefault();
 
-    debugelement.innerHTML = "x: " + x + " y: " + y + " pointerType: " + event.pointerType + " pressure: " + event.pressure;
+    // debugelement.innerHTML = "x: " + x + " y: " + y + " pointerType: " + event.pointerType + " pressure: " + event.pressure;
     if (event.pointerType === 'pen' && event.pressure === 0) {
         return;
     }
@@ -386,8 +386,8 @@ function drawQuad(x, y, size, angle=0) {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.viewport(0, 0, canvas.width, canvas.height);
-    // gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     for(let k = 0; k < parts; k++) {
 
         let rr = 0.026 + .046*(1-currntSat)*(1-currntVal);
@@ -419,15 +419,15 @@ function drawQuad(x, y, size, angle=0) {
         
         gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     }
-    // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    // gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, canvas.width, canvas.height);
 
-    // gl.clearColor(.33, .33, .33, 1.0);
-    // gl.clear(gl.COLOR_BUFFER_BIT);
-    // // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.clearColor(.33, .33, .33, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    // renderFramebufferToScreen(gl, screentex);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    renderFramebufferToScreen(gl, screentex);
 
     // Draw framebuffer's texture to screen
 
