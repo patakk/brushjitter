@@ -138,21 +138,6 @@ switch (status) {
 }
 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-function renderFramebufferToScreen(gl, framebufferTexture) {
-    gl.useProgram(screenQuadProgramInfo.program);
-
-    // Set the framebuffer's texture
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, framebufferTexture);
-    gl.uniform1i(screenQuadProgramInfo.uniformLocations.texture, 0);
-
-    // Bind and draw the full-screen quad
-    gl.bindBuffer(gl.ARRAY_BUFFER, screenQuadBuffer);
-    gl.vertexAttribPointer(screenQuadProgramInfo.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(screenQuadProgramInfo.attribLocations.vertexPosition);
-
-    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
-}
 
 function setupEvents(){
     if(isIpad){
@@ -375,12 +360,30 @@ function handleDown(event) {
 
 let quadCount = 0;
 
+
+function renderFramebufferToScreen(gl, framebufferTexture) {
+    gl.useProgram(screenQuadProgramInfo.program);
+
+    // Set the framebuffer's texture
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, framebufferTexture);
+    gl.uniform1i(screenQuadProgramInfo.uniformLocations.texture, 0);
+
+    // Bind and draw the full-screen quad
+    gl.bindBuffer(gl.ARRAY_BUFFER, screenQuadBuffer);
+    gl.vertexAttribPointer(screenQuadProgramInfo.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(screenQuadProgramInfo.attribLocations.vertexPosition);
+
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+}
+
 function drawQuad(x, y, size, angle=0) {
     let dist = Math.sqrt((x - prevX) * (x - prevX) + (y - prevY) * (y - prevY));
     let parts = 2 + Math.floor(dist / detail);
 
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.viewport(0, 0, canvas.width, canvas.height);
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
     // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     for(let k = 0; k < parts; k++) {
@@ -415,6 +418,8 @@ function drawQuad(x, y, size, angle=0) {
         gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.viewport(0, 0, canvas.width, canvas.height);
+
     // gl.disable(gl.DEPTH_TEST);
     // gl.clearColor(.33, .33, .33, 1.0);
     // gl.clear(gl.COLOR_BUFFER_BIT);
