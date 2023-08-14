@@ -31,10 +31,12 @@ export const drawingFragmentShader = `
     precision mediump float;
 
     uniform vec4 uBrushColor;
+    uniform vec4 uSecondColor;
     uniform vec2 uResolution;
     uniform float uTime;
     uniform float uBrushJitter;
-
+    uniform float uDissipation;
+    
     varying vec2 vUV;
     varying float vSize;
 
@@ -160,6 +162,10 @@ export const drawingFragmentShader = `
         float rr = uBrushJitter*0.4*(-1.+2.*fbm3(vUV.xy*10.+31.31, uTime*.01*0.+213.13));
 
         vec3 brushRgb = hsx2rgb(fract(uBrushColor.r+1.0+rr), uBrushColor.g, uBrushColor.b);
+
+        float mixamount = smoothstep(.3, .7, fbm3(vUV.xy*10.+131.31, uTime*.01*0.+11.44));
+        if(uSecondColor.a > 0.0)
+            brushRgb = mix(brushRgb, uSecondColor.rgb, mixamount*uDissipation);
 
         // gl_FragColor = vec4(brushRgb.rgb*alpha, alpha); // using alpha
         gl_FragColor = vec4(brushRgb.rgb*alpha, alpha); // using alpha

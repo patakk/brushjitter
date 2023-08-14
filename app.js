@@ -29,7 +29,9 @@ let currntSat = 0.5;
 let currntVal = 0.5;
 let brushSize = 30.0;  // Change this to adjust the size
 let brushJitter = 0.5;
+let secondColor = [.5, .5, .5, 1.];
 let mouseDown = false;
+let dissipation = 0.0;
 
 let ctrlPressed = false;
 
@@ -87,10 +89,12 @@ drawingProgramInfo = {
     },
     uniformLocations: {
         brushColor: gl.getUniformLocation(drawingProgram, 'uBrushColor'),
+        secondColor: gl.getUniformLocation(drawingProgram, 'uSecondColor'),
         time: gl.getUniformLocation(drawingProgram, 'uTime'),
         position: gl.getUniformLocation(drawingProgram, 'uPosition'),
         size: gl.getUniformLocation(drawingProgram, 'uSize'),
         brushJitter: gl.getUniformLocation(drawingProgram, 'uBrushJitter'),
+        dissipation: gl.getUniformLocation(drawingProgram, 'uDissipation'),
         angle: gl.getUniformLocation(drawingProgram, 'uAngle'),
         resolution: gl.getUniformLocation(drawingProgram, 'uResolution')  // Added line
     },
@@ -119,6 +123,20 @@ gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, screentex, 0);
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+
+const framebuffersmall = gl.createFramebuffer();
+gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffersmall);
+
+const screentexsmall = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, screentexsmall);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, canvas.width/16, canvas.height/16, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, screentexsmall, 0);
+gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
 
 const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
@@ -136,7 +154,6 @@ switch (status) {
         debugelement.innerHTML = "FRAMEBUFFER_UNSUPPORTED";
         break;
 }
-gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
 
 function setupEvents(){
@@ -304,6 +321,19 @@ function handleDrawing(event) {
     event.preventDefault();
     event.preventDefault();
 
+    // if(quadCount % 1 == 0){
+    //     let vector = [x - prevXa, y - prevYa];
+    //     let dist = Math.sqrt((x - prevXa) * (x - prevXa) + (y - prevYa) * (y - prevYa));
+    //     let normalized = [vector[0] / dist, vector[1] / dist];
+    //     let xx = prevXa + normalized[0] * dist*brushSize*2;
+    //     let yy = prevYa + normalized[1] * dist*brushSize*2;
+    //     let colo = getColorFromFramebuffer(gl, framebuffersmall, xx/16, canvas.height/16-yy/16);
+    //     if(colo.a> 222){
+    //         secondColor = [colo.r/255, colo.g/255, colo.b/255, colo.a/255];
+    //         dissipation = Math.min(1., dissipation+.021);
+    //     }
+    // }
+
     // debugelement.innerHTML = "x: " + x + " y: " + y + " pointerType: " + event.pointerType + " pressure: " + event.pressure;
     if (event.pointerType === 'pen' && event.pressure === 0) {
         return;
@@ -346,6 +376,12 @@ function handleDown(event) {
     const x = event.clientX;
     const y = event.clientY;
 
+    let colo = getColorFromFramebuffer(gl, framebuffersmall, x/16, canvas.height/16-y/16);
+    if(colo.a > 222){
+        secondColor = [colo.r/255, colo.g/255, colo.b/255, colo.a/255];
+        dissipation = 1.;
+    }
+
     if(event.pointerType === 'pen' && event.pressure === 0) {
         return;
     }
@@ -379,6 +415,22 @@ function renderFramebufferToScreen(gl, framebufferTexture) {
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
 }
 
+function getColorFromFramebuffer(gl, framebuffer, x, y) {
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+
+    let pixels = new Uint8Array(4);
+    gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+    return {
+        r: pixels[0],
+        g: pixels[1],
+        b: pixels[2],
+        a: pixels[3]
+    };
+}
+
 function drawQuad(x, y, size, angle=0) {
     let dist = Math.sqrt((x - prevX) * (x - prevX) + (y - prevY) * (y - prevY));
     let parts = 2 + Math.floor(dist / detail);
@@ -388,36 +440,54 @@ function drawQuad(x, y, size, angle=0) {
     gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
     gl.viewport(0, 0, canvas.width*2, canvas.height*2);
     //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    for(let k = 0; k < parts; k++) {
+    for(let kk = 0; kk < 2; kk++){
+        if(kk == 0){
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+            gl.viewport(0, 0, canvas.width*2, canvas.height*2);
+        }
+        else{
+            gl.enable(gl.BLEND);
+            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffersmall);
+            gl.viewport(0, 0, canvas.width/16, canvas.height/16);
+        }
+        for(let k = 0; k < parts; k++) {
 
-        let rr = 0.026 + .046*(1-currntSat)*(1-currntVal);
+            let rr = 0.026 + .046*(1-currntSat)*(1-currntVal);
+    
+            let randColor = hsx2rgb((currntHue + rr * (-1 + 2 * Math.random()) + 1) % 1, currntSat, currntVal);
+    
+            let xx = prevX + (x - prevX) * k / parts;
+            let yy = prevY + (y - prevY) * k / parts;
+            xx = (xx / canvas.width) * 2 - 1;
+            yy = -(yy / canvas.height) * 2 + 1;
+    
+            gl.useProgram(drawingProgramInfo.program);
+            // Set uniforms
+            gl.uniform2f(drawingProgramInfo.uniformLocations.position, xx, yy);
+            gl.uniform1f(drawingProgramInfo.uniformLocations.size, size);
+            gl.uniform1f(drawingProgramInfo.uniformLocations.angle, angle);
+            gl.uniform1f(drawingProgramInfo.uniformLocations.brushJitter, brushJitter);
+            gl.uniform1f(drawingProgramInfo.uniformLocations.dissipation, dissipation);
+            // gl.uniform4fv(drawingProgramInfo.uniformLocations.brushColor, [randColor[0], randColor[1], randColor[2], 1.0]);
+            gl.uniform4fv(drawingProgramInfo.uniformLocations.brushColor, [(currntHue + 0*rr * (-1 + 2 * Math.random()) + 1) % 1, currntSat, currntVal, 1.0]);
+            gl.uniform4fv(drawingProgramInfo.uniformLocations.secondColor, secondColor);
+            gl.uniform1f(drawingProgramInfo.uniformLocations.time, quadCount++);
+            gl.uniform2f(drawingProgramInfo.uniformLocations.resolution, canvas.width, canvas.height);
 
-        let randColor = hsx2rgb((currntHue + rr * (-1 + 2 * Math.random()) + 1) % 1, currntSat, currntVal);
-
-        let xx = prevX + (x - prevX) * k / parts;
-        let yy = prevY + (y - prevY) * k / parts;
-        xx = (xx / canvas.width) * 2 - 1;
-        yy = -(yy / canvas.height) * 2 + 1;
-
-        gl.useProgram(drawingProgramInfo.program);
-        // Set uniforms
-        gl.uniform2f(drawingProgramInfo.uniformLocations.position, xx, yy);
-        gl.uniform1f(drawingProgramInfo.uniformLocations.size, size);
-        gl.uniform1f(drawingProgramInfo.uniformLocations.angle, angle);
-        gl.uniform1f(drawingProgramInfo.uniformLocations.brushJitter, brushJitter);
-        // gl.uniform4fv(drawingProgramInfo.uniformLocations.brushColor, [randColor[0], randColor[1], randColor[2], 1.0]);
-        gl.uniform4fv(drawingProgramInfo.uniformLocations.brushColor, [(currntHue + 0*rr * (-1 + 2 * Math.random()) + 1) % 1, currntSat, currntVal, 1.0]);
-        gl.uniform1f(drawingProgramInfo.uniformLocations.time, quadCount++);
-        gl.uniform2f(drawingProgramInfo.uniformLocations.resolution, canvas.width, canvas.height);
-
-
-        // Bind vertex buffer
-        gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-        gl.vertexAttribPointer(drawingProgramInfo.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(drawingProgramInfo.attribLocations.vertexPosition);
-
-        
-        gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+            dissipation = Math.max(0.0, dissipation - 0.001);
+    
+    
+            // Bind vertex buffer
+            gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+            gl.vertexAttribPointer(drawingProgramInfo.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0);
+            gl.enableVertexAttribArray(drawingProgramInfo.attribLocations.vertexPosition);
+    
+            
+            gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
+        }
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.viewport(0, 0, canvas.width, canvas.height);
