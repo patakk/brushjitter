@@ -112,6 +112,14 @@ screenQuadProgramInfo = {
 const framebuffer = gl.createFramebuffer();
 gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 
+if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+    debugelement.innerHTML = "Failed to create a complete framebuffer";
+}
+var error = gl.getError();
+if (error !== gl.NO_ERROR) {
+    debugelement.innerHTML = "WebGL Error: " + error;
+}
+
 const screentex = gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D, screentex);
 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, canvas.width, canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
