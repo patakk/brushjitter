@@ -19,7 +19,7 @@ export const drawingVertexShader = `
         mat2 rot = mat2(c, -s, s, c);
         vec4 rotatedPos = vec4(rot * aVertexPosition.xy, 1.0, 1.0);
 
-        gl_Position = aVertexPosition * vec4(size.xy, 1.0, 1.0) + vec4(uPosition, 0.0, 0.0);
+        gl_Position = aVertexPosition * vec4(size.xy, 1.0, 1.0) + vec4(uPosition*1., 0.0, 0.0);
         vUV = aVertexPosition.xy * 0.5 * vec2(1.,1.) + 0.5;
         vSize = uSize;
 
