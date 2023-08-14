@@ -385,6 +385,7 @@ function drawQuad(x, y, size, angle=0) {
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     gl.viewport(0, 0, canvas.width, canvas.height);
     // gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     for(let k = 0; k < parts; k++) {
 
         let rr = 0.026 + .046*(1-currntSat)*(1-currntVal);
