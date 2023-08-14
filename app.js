@@ -304,6 +304,7 @@ function handleDrawing(event) {
     event.preventDefault();
     event.preventDefault();
 
+    debugelement.innerHTML = "x: " + x + " y: " + y + " pointerType: " + event.pointerType + "pressure: " + event.pressure;
     if (event.pointerType === 'pen' && event.pressure === 0) {
         return;
     }
@@ -312,7 +313,6 @@ function handleDrawing(event) {
         return;
     }
 
-    debugelement.innerHTML = "x: " + x + " y: " + y;
         
     let dist = Math.sqrt((x - prevXa) * (x - prevXa) + (y - prevYa) * (y - prevYa));
     let vector = [x - prevXa, y - prevYa];
