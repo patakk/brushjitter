@@ -112,14 +112,6 @@ screenQuadProgramInfo = {
 const framebuffer = gl.createFramebuffer();
 gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
 
-if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
-    debugelement.innerHTML = "Failed to create a complete framebuffer";
-}
-var error = gl.getError();
-if (error !== gl.NO_ERROR) {
-    debugelement.innerHTML = "WebGL Error: " + error;
-}
-
 const screentex = gl.createTexture();
 gl.bindTexture(gl.TEXTURE_2D, screentex);
 gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, canvas.width, canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
@@ -127,6 +119,23 @@ gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
 gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, screentex, 0);
+
+
+const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+switch (status) {
+    case gl.FRAMEBUFFER_INCOMPLETE_ATTACHMENT:
+        debugelement.innerHTML = "FRAMEBUFFER_INCOMPLETE_ATTACHMENT";
+        break;
+    case gl.FRAMEBUFFER_INCOMPLETE_DIMENSIONS:
+        debugelement.innerHTML = "FRAMEBUFFER_INCOMPLETE_DIMENSIONS";
+        break;
+    case gl.FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT:
+        debugelement.innerHTML = "FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT";
+        break;
+    case gl.FRAMEBUFFER_UNSUPPORTED:
+        debugelement.innerHTML = "FRAMEBUFFER_UNSUPPORTED";
+        break;
+}
 gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
 function renderFramebufferToScreen(gl, framebufferTexture) {
@@ -385,6 +394,7 @@ function drawQuad(x, y, size, angle=0) {
         xx = (xx / canvas.width) * 2 - 1;
         yy = -(yy / canvas.height) * 2 + 1;
 
+        gl.useProgram(drawingProgramInfo.program);
         // Set uniforms
         gl.uniform2f(drawingProgramInfo.uniformLocations.position, xx, yy);
         gl.uniform1f(drawingProgramInfo.uniformLocations.size, size);
@@ -401,7 +411,6 @@ function drawQuad(x, y, size, angle=0) {
         gl.vertexAttribPointer(drawingProgramInfo.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(drawingProgramInfo.attribLocations.vertexPosition);
 
-        gl.useProgram(drawingProgramInfo.program);
         
         gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     }
