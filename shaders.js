@@ -11,7 +11,7 @@ export const drawingVertexShader = `
     varying float vSize;
 
     void main(void) {
-        vec2 size = vec2(uSize) / uResolution;
+        vec2 size = vec2(uSize) / uResolution*vec2(1.,1.);
 
         // rotation
         float s = sin(uAngle);
@@ -19,7 +19,7 @@ export const drawingVertexShader = `
         mat2 rot = mat2(c, -s, s, c);
         vec4 rotatedPos = vec4(rot * aVertexPosition.xy, 1.0, 1.0);
 
-        gl_Position = aVertexPosition * vec4(size.xy, 1.0, 1.0) + vec4(uPosition*1., 0.0, 0.0);
+        gl_Position = aVertexPosition * vec4(size.xy, 1.0, 1.0) + vec4(uPosition, 0.0, 0.0);
         vUV = aVertexPosition.xy * 0.5 * vec2(1.,1.) + 0.5;
         vSize = uSize;
 
@@ -147,7 +147,246 @@ export const drawingFragmentShader = `
         return v;
     }
 
+    vec4 Saturate(vec4 inc, float sat) {
+        if (abs(sat)<0.004) {return inc;}  //Immediately return when sat is zero or so small no difference will result (less than 1/255)
+        if ((inc.r==0.0)&&(inc.g==0.0)&&(inc.b==0.0)) {return inc;}  //Prevents division by zero trying to saturate black
+    
+        vec4 outc;
+        vec3 clerp=vec3(inc.r,inc.g,inc.b);
+    
+        if (sat>0.0) {
+            vec3 maxsat;
+            float mx=max(max(inc.r,inc.g),inc.b);
+            maxsat=clerp*1.0/mx;
+            clerp=mix(clerp,maxsat,sat);
+        }
+        if (sat<0.0) {
+            vec3 grayc;
+            float avg=(inc.r+inc.g+inc.b)/3.;
+            grayc=vec3(avg);
+            clerp=mix(clerp,grayc,-1.0*sat);
+        }
+        outc=vec4(clerp.xyz, 1.);
+        return outc;
+        return vec4(1.);
+    }
 
+    
+    vec4 Xform_RYB2RGB(float r, float y, float b) {
+        float rin=r;
+        float yin=y;
+        float bin=b;
+
+
+        //The values defined here are where the magic happens.  You can experiment with changing the values and see if you find a better set.  If so, notify me on GitHub @ProfJski !
+        //I have included a few alternative sets below
+
+        //RYB corners in RGB values
+        //Values arranged to approximate an artist's color wheel
+        vec3 CG000=vec3(0.0,0.0,0.0); //Black
+        vec3 CG100=vec3(1.0,0.0,0.0); //Red
+        vec3 CG010=vec3(0.9,0.9,0.0); //Yellow = RGB Red+Green.  Still a bit high, but helps Yellow compete against Green.  Lower gives murky yellows.
+        vec3 CG001=vec3(0.0,0.36,1.0); //Blue: Green boost of 0.36 helps eliminate flatness of spectrum around pure Blue
+        vec3 CG011=vec3(0.0,0.9,0.2); //Green: A less intense green than {0,1,0}, which tends to dominate
+        vec3 CG110=vec3(1.0,0.6,0.0); //Orange = RGB full Red, 60% Green
+        vec3 CG101=vec3(0.6,0.0,1.0); //Purple = 60% Red, full Blue
+        vec3 CG111=vec3(1.0,1.0,1.0); //White
+
+        //Trilinear interpolation from RYB to RGB
+        vec3 C00,C01,C10,C11;
+        C00=CG000*(1.0-rin) + CG100*rin;
+        C01=CG001*(1.0-rin) + CG101*rin;
+        C10=CG010*(1.0-rin) + CG110*rin;
+        C11=CG011*(1.0-rin) + CG111*rin;
+
+        vec3 C0,C1;
+        C0=C00*(1.0-yin) + C10*yin;
+        C1=C01*(1.0-yin) + C11*yin;
+
+        vec3 C;
+        C=C0*(1.0-bin) + C1*bin;
+
+        vec4 CRGB=vec4(C.x,C.y,C.z,1.);
+        CRGB=vec4(r,y,b,1.);
+
+        return CRGB;
+    }
+
+    vec4 Xform_RGB2RYB(float r, float g, float b) {
+        float rin=r;
+        float gin=g;
+        float bin=b;
+    
+        //Finding the appropriate values for the inverse transform was no easy task.  After some experimentation, I wrote a separate program that used
+        //the calculus of variations to help tweak my guesses towards values that provided a closer round-trip conversion from RGB to RYB to RGB again.
+    
+        //RGB corners in RYB values
+        vec3 CG000=vec3(0.0,0.0,0.0); //Black
+        vec3 CG100=vec3(0.891,0.0,0.0); //Red
+        vec3 CG010=vec3(0.0,0.714,0.374); //Green = RYB Yellow + Blue
+        vec3 CG001=vec3(0.07,0.08,0.893); //Blue:
+        vec3 CG011=vec3(0.0,0.116,0.313); //Cyan = RYB Green + Blue.  Very dark to make the rest of the function work correctly
+        vec3 CG110=vec3(0.0,0.915,0.0); //Yellow
+        vec3 CG101=vec3(0.554,0.0,0.1); //Magenta =RYB Red + Blue.  Likewise dark.
+        vec3 CG111=vec3(1.0,1.0,1.0); //White
+    
+        //Trilinear interpolation from RGB to RYB
+        vec3 C00,C01,C10,C11;
+        C00=CG000*(1.0-rin) + CG100*rin;
+        C01=CG001*(1.0-rin) + CG101*rin;
+        C10=CG010*(1.0-rin) + CG110*rin;
+        C11=CG011*(1.0-rin) + CG111*rin;
+    
+        vec3 C0,C1;
+        C0=C00*(1.0-gin) + C10*gin;
+        C1=C01*(1.0-gin) + C11*gin;
+    
+        vec3 C;
+        C=C0*(1.0-bin) + C1*bin;
+    
+        vec4 CRYB=Saturate(vec4(C, 1.),0.5);
+    
+        return CRYB;
+    }
+    
+    
+    vec4 ColorMix(vec4 a, vec4 b, float blend) {
+        vec4 outc;
+        outc.r=sqrt((1.0-blend)*(a.r*a.r)+blend*(b.r*b.r));
+        outc.g=sqrt((1.0-blend)*(a.g*a.g)+blend*(b.g*b.g));
+        outc.b=sqrt((1.0-blend)*(a.b*a.b)+blend*(b.b*b.b));
+        outc.a=(1.0-blend)*a.a+blend*b.a;
+    
+        return outc;
+    }
+    
+    vec4 ColorMixLin(vec4 a, vec4 b, float blend) {
+        vec4 outc;
+        outc.r=(1.0-blend)*a.r+blend*b.r;
+        outc.g=(1.0-blend)*a.g+blend*b.g;
+        outc.b=(1.0-blend)*a.b+blend*b.b;
+        outc.a=(1.0-blend)*a.a+blend*b.a;
+    
+        return outc;
+    }
+
+    
+    vec4 ColorInv(vec4 inc) {
+        return vec4(1.-inc.rgb, inc.a);
+    }
+
+    vec4 Brighten(vec4 inc, float bright) {
+        if (bright==0.0) { return inc;}
+
+        vec4 outc;
+        if (bright>0.0) {
+            outc=ColorMix(inc,vec4(1.,1.,1.,1.),bright);
+        }
+
+        if (bright<0.0) {
+            outc=ColorMix(inc,vec4(0.,0.,0.,1.),-1.0*bright);
+        }
+        return outc;
+    }
+
+
+    float ColorDistance(vec4 a, vec4 b) {
+        float outc=((a.r-b.r)*(a.r-b.r)+(a.g-b.g)*(a.g-b.g)+(a.b-b.b)*(a.b-b.b));
+        outc=sqrt(outc)/(sqrt(3.0)*1.); //scale to 0-1
+        return outc;
+    }
+
+    vec4 ColorMixSub(vec4 a, vec4 b, float blend) {
+        vec4 outc;
+        vec4 c,d,f;
+
+        c=ColorInv(a);
+        d=ColorInv(b);
+
+        f.r=max(0.,1.-c.r-d.r);
+        f.g=max(0.,1.-c.g-d.g);
+        f.b=max(0.,1.-c.b-d.b);
+
+        float cd=ColorDistance(a,b);
+        cd=4.0*blend*(1.0-blend)*cd;
+        outc=ColorMixLin(ColorMixLin(a,b,blend),f,cd);
+
+        outc.a=1.;
+        return outc;
+    }
+
+    
+    float step2(float ang) {
+        float outValue = 0.0;
+        float sc = 0.0;
+    
+        float deg = ang * 360.0;
+
+        deg = mod(deg+360.0*4., 360.0);
+    
+        if (deg <= 60.0) {
+            outValue = 1.0;
+        } else if (deg > 60.0 && deg <= 120.0) {
+            sc = (deg - 60.0) / 60.0;
+            outValue = 1.0 - 2.0 * sc / sqrt(1.0 + 3.0 * sc * sc);
+        } else if (deg > 120.0 && deg <= 240.0) {
+            outValue = 0.0;
+        } else if (deg > 240.0 && deg <= 300.0) {
+            sc = (deg - 240.0) / 60.0;
+            outValue = 2.0 * sc / sqrt(1.0 + 3.0 * sc * sc);
+        } else if (deg > 300.0 && deg <= 360.0) {
+            outValue = 1.0;
+        }
+    
+        return outValue;
+    }
+    
+    vec4 map2(float ang) {
+        float r = step2(ang);
+        float y = step2(ang - 120. / 360.);
+        float b = step2(ang - 240. / 360.);
+        return Xform_RYB2RGB(r, y, b);
+    }
+
+    vec3 rgb2hsl(float r, float g, float b){
+        float maxx = max(r, max(g, b));
+        float minn = min(r, min(g, b));
+        float h, s, l = (maxx + minn) / 2.;
+    
+        if(maxx == minn){
+            h = s = 0.; // achromatic
+        }else{
+            float d = maxx - minn;
+            s = l > 0.5 ? d / (2. - maxx - minn) : d / (maxx + minn);
+            if(maxx == r)
+                h = (g - b) / d + (g < b ? 6. : 0.);
+            if(maxx == g)
+                h = (b - r) / d + 2.;
+            if(maxx == b)
+                h = (r - g) / d + 4.;
+            h /= 6.;
+        }
+    
+        return vec3(h, s, l);
+    }
+
+    vec3 mymix(vec3 fffff, vec3 qqqqq, float t, float llm) {
+
+        vec3 fffffhsl = rgb2hsl(fffff.r, fffff.g, fffff.b);
+        vec3 qqqqqhsl = rgb2hsl(qqqqq.r, qqqqq.g, qqqqq.b);
+
+        if(fffffhsl.x - qqqqqhsl.x > 0.5)
+            qqqqqhsl.x += 1.0;
+        else if(qqqqqhsl.x - fffffhsl.x > 0.5)
+            fffffhsl.x += 1.0;
+
+        float mixedhue = fract(mix(fffffhsl.x, qqqqqhsl.x, t));
+        float mixedsat = mix(fffffhsl.y, qqqqqhsl.y, t);
+        float mixedlum = mix(fffffhsl.z, qqqqqhsl.z, t);
+
+        // return hsx2rgb(mixedhue, mixedsat, (lum(fffff.r,fffff.g,fffff.b)+lum(qqqqq.r,qqqqq.g,qqqqq.b))*0.5);
+        return hsx2rgb(mixedhue, mixedsat, llm);
+    }
 
     void main(void) {
         float dist = distance(vUV.xy, vec2(0.5, 0.5));
@@ -156,19 +395,42 @@ export const drawingFragmentShader = `
         dist = smoothstep(0.0, 0.5, dist);
 
         float frq = vSize/3.;
-        float ff = fbm3(vUV.xy*frq, uTime*.01);
+        
+        frq *= .6;
+        float ff = fbm3(vUV.xy*frq*vec2(1., 1.), uTime*.001);
         alpha *= smoothstep(0.5, 0.5+.2, ff);
 
-        float rr = uBrushJitter*0.4*(-1.+2.*fbm3(vUV.xy*10.+31.31, uTime*.01*0.+213.13));
+        float rr = uBrushJitter*0.4*(-1.+2.*fbm3(vUV.xy*17.+31.31, uTime*.01*0.+213.13));
 
         vec3 brushRgb = hsx2rgb(fract(uBrushColor.r+1.0+rr), uBrushColor.g, uBrushColor.b);
 
         float mixamount = smoothstep(.3, .7, fbm3(vUV.xy*10.+131.31, uTime*.01*0.+11.44));
-        if(uSecondColor.a > 0.0)
-            brushRgb = mix(brushRgb, uSecondColor.rgb, mixamount*uDissipation);
+        if(uSecondColor.a > 0.0){
+            // brushRgb = mix(brushRgb, uSecondColor.rgb, mixamount*uDissipation);
+            brushRgb = mymix(brushRgb, uSecondColor.rgb, mixamount*uDissipation, uBrushColor.b);
+        }
+
+        float ff2 = fbm3(vUV.xy*frq*vec2(1., 1.)+314.4113, uTime*.001);
+        alpha = smoothstep(0.5, 0.5+.2, ff2);
+        ff2 = pow(smoothstep(0.5, 0.5+.2, ff2), 2.);
+
+        float gradx_fbm = fbm3(vUV.xy*frq*vec2(1., 1.)+314.4113 + vec2(0.04, 0.), uTime*.001) - fbm3(vUV.xy*frq*vec2(1., 1.)+314.4113 - vec2(0.04, 0.), uTime*.001);
+        float grady_fbm = fbm3(vUV.xy*frq*vec2(1., 1.)+314.4113 + vec2(0., 0.04), uTime*.001) - fbm3(vUV.xy*frq*vec2(1., 1.)+314.4113 - vec2(0., 0.04), uTime*.001);
+
+        vec2 grad_fbm = vec2(gradx_fbm, grady_fbm);
+        grad_fbm = normalize(grad_fbm);
+
+        vec2 lightdir = vec2(0.5, 0.5) / length(vec2(0.5, 0.5));
+
+        float light = dot(grad_fbm, lightdir);
+        // light = (light+1.0)/2.;
+
 
         // gl_FragColor = vec4(brushRgb.rgb*alpha, alpha); // using alpha
         gl_FragColor = vec4(brushRgb.rgb*alpha, alpha); // using alpha
+        gl_FragColor = vec4(vec3(ff2), alpha); // using alpha
+        gl_FragColor = vec4(brushRgb.rgb*alpha+vec3(light*.02)*alpha, alpha); // using alpha
+
     }
 `;
 
@@ -368,8 +630,245 @@ export const pickerFragmentShader = `
     }
     
 
+    float power(float p, float g) {
+        if (p < 0.5)
+            return 0.5 * pow(2.*p, g);
+        else
+            return 1. - 0.5 * pow(2.*(1. - p), g);
+    }
+
+    
+    vec4 Saturate(vec4 inc, float sat) {
+        if (abs(sat)<0.004) {return inc;}  //Immediately return when sat is zero or so small no difference will result (less than 1/255)
+        if ((inc.r==0.0)&&(inc.g==0.0)&&(inc.b==0.0)) {return inc;}  //Prevents division by zero trying to saturate black
+    
+        vec4 outc;
+        vec3 clerp=vec3(inc.r,inc.g,inc.b);
+    
+        if (sat>0.0) {
+            vec3 maxsat;
+            float mx=max(max(inc.r,inc.g),inc.b);
+            maxsat=clerp*1.0/mx;
+            clerp=mix(clerp,maxsat,sat);
+        }
+        if (sat<0.0) {
+            vec3 grayc;
+            float avg=(inc.r+inc.g+inc.b)/3.;
+            grayc=vec3(avg);
+            clerp=mix(clerp,grayc,-1.0*sat);
+        }
+        outc=vec4(clerp.xyz, 1.);
+        return outc;
+        return vec4(1.);
+    }
+
+    
+    vec4 Xform_RYB2RGB(float r, float y, float b) {
+        float rin=r;
+        float yin=y;
+        float bin=b;
+
+
+        //The values defined here are where the magic happens.  You can experiment with changing the values and see if you find a better set.  If so, notify me on GitHub @ProfJski !
+        //I have included a few alternative sets below
+
+        //RYB corners in RGB values
+        //Values arranged to approximate an artist's color wheel
+        vec3 CG000=vec3(0.0,0.0,0.0); //Black
+        vec3 CG100=vec3(1.0,0.0,0.0); //Red
+        vec3 CG010=vec3(0.9,0.9,0.0); //Yellow = RGB Red+Green.  Still a bit high, but helps Yellow compete against Green.  Lower gives murky yellows.
+        vec3 CG001=vec3(0.0,0.36,1.0); //Blue: Green boost of 0.36 helps eliminate flatness of spectrum around pure Blue
+        vec3 CG011=vec3(0.0,0.9,0.2); //Green: A less intense green than {0,1,0}, which tends to dominate
+        vec3 CG110=vec3(1.0,0.6,0.0); //Orange = RGB full Red, 60% Green
+        vec3 CG101=vec3(0.6,0.0,1.0); //Purple = 60% Red, full Blue
+        vec3 CG111=vec3(1.0,1.0,1.0); //White
+
+        //Trilinear interpolation from RYB to RGB
+        vec3 C00,C01,C10,C11;
+        C00=CG000*(1.0-rin) + CG100*rin;
+        C01=CG001*(1.0-rin) + CG101*rin;
+        C10=CG010*(1.0-rin) + CG110*rin;
+        C11=CG011*(1.0-rin) + CG111*rin;
+
+        vec3 C0,C1;
+        C0=C00*(1.0-yin) + C10*yin;
+        C1=C01*(1.0-yin) + C11*yin;
+
+        vec3 C;
+        C=C0*(1.0-bin) + C1*bin;
+
+        vec4 CRGB=vec4(C.x,C.y,C.z,1.);
+        CRGB=vec4(r,y,b,1.);
+
+        return CRGB;
+    }
+
+    vec4 Xform_RGB2RYB(float r, float g, float b) {
+        float rin=r;
+        float gin=g;
+        float bin=b;
+    
+        //Finding the appropriate values for the inverse transform was no easy task.  After some experimentation, I wrote a separate program that used
+        //the calculus of variations to help tweak my guesses towards values that provided a closer round-trip conversion from RGB to RYB to RGB again.
+    
+        //RGB corners in RYB values
+        vec3 CG000=vec3(0.0,0.0,0.0); //Black
+        vec3 CG100=vec3(0.891,0.0,0.0); //Red
+        vec3 CG010=vec3(0.0,0.714,0.374); //Green = RYB Yellow + Blue
+        vec3 CG001=vec3(0.07,0.08,0.893); //Blue:
+        vec3 CG011=vec3(0.0,0.116,0.313); //Cyan = RYB Green + Blue.  Very dark to make the rest of the function work correctly
+        vec3 CG110=vec3(0.0,0.915,0.0); //Yellow
+        vec3 CG101=vec3(0.554,0.0,0.1); //Magenta =RYB Red + Blue.  Likewise dark.
+        vec3 CG111=vec3(1.0,1.0,1.0); //White
+    
+        //Trilinear interpolation from RGB to RYB
+        vec3 C00,C01,C10,C11;
+        C00=CG000*(1.0-rin) + CG100*rin;
+        C01=CG001*(1.0-rin) + CG101*rin;
+        C10=CG010*(1.0-rin) + CG110*rin;
+        C11=CG011*(1.0-rin) + CG111*rin;
+    
+        vec3 C0,C1;
+        C0=C00*(1.0-gin) + C10*gin;
+        C1=C01*(1.0-gin) + C11*gin;
+    
+        vec3 C;
+        C=C0*(1.0-bin) + C1*bin;
+    
+        vec4 CRYB=Saturate(vec4(C, 1.),0.5);
+    
+        return CRYB;
+    }
+    
+    
+    vec4 ColorMix(vec4 a, vec4 b, float blend) {
+        vec4 outc;
+        outc.r=sqrt((1.0-blend)*(a.r*a.r)+blend*(b.r*b.r));
+        outc.g=sqrt((1.0-blend)*(a.g*a.g)+blend*(b.g*b.g));
+        outc.b=sqrt((1.0-blend)*(a.b*a.b)+blend*(b.b*b.b));
+        outc.a=(1.0-blend)*a.a+blend*b.a;
+    
+        return outc;
+    }
+    
+    vec4 ColorMixLin(vec4 a, vec4 b, float blend) {
+        vec4 outc;
+        outc.r=(1.0-blend)*a.r+blend*b.r;
+        outc.g=(1.0-blend)*a.g+blend*b.g;
+        outc.b=(1.0-blend)*a.b+blend*b.b;
+        outc.a=(1.0-blend)*a.a+blend*b.a;
+    
+        return outc;
+    }
+
+    
+    vec4 ColorInv(vec4 inc) {
+        return vec4(1.-inc.rgb, inc.a);
+    }
+
+    vec4 Brighten(vec4 inc, float bright) {
+        if (bright==0.0) { return inc;}
+
+        vec4 outc;
+        if (bright>0.0) {
+            outc=ColorMix(inc,vec4(1.,1.,1.,1.),bright);
+        }
+
+        if (bright<0.0) {
+            outc=ColorMix(inc,vec4(0.,0.,0.,1.),-1.0*bright);
+        }
+        return outc;
+    }
+
+
+    float ColorDistance(vec4 a, vec4 b) {
+        float outc=((a.r-b.r)*(a.r-b.r)+(a.g-b.g)*(a.g-b.g)+(a.b-b.b)*(a.b-b.b));
+        outc=sqrt(outc)/(sqrt(3.0)*1.); //scale to 0-1
+        return outc;
+    }
+
+    vec4 ColorMixSub(vec4 a, vec4 b, float blend) {
+        vec4 outc;
+        vec4 c,d,f;
+
+        c=ColorInv(a);
+        d=ColorInv(b);
+
+        f.r=max(0.,1.-c.r-d.r);
+        f.g=max(0.,1.-c.g-d.g);
+        f.b=max(0.,1.-c.b-d.b);
+
+        float cd=ColorDistance(a,b);
+        cd=4.0*blend*(1.0-blend)*cd;
+        outc=ColorMixLin(ColorMixLin(a,b,blend),f,cd);
+
+        outc.a=1.;
+        return outc;
+    }
+
+    
+    float step2(float ang) {
+        float outValue = 0.0;
+        float sc = 0.0;
+    
+        float deg = ang * 360.0;
+
+        deg = mod(deg+360.0*4., 360.0);
+    
+        if (deg <= 60.0) {
+            outValue = 1.0;
+        } else if (deg > 60.0 && deg <= 120.0) {
+            sc = (deg - 60.0) / 60.0;
+            outValue = 1.0 - 2.0 * sc / sqrt(1.0 + 3.0 * sc * sc);
+        } else if (deg > 120.0 && deg <= 240.0) {
+            outValue = 0.0;
+        } else if (deg > 240.0 && deg <= 300.0) {
+            sc = (deg - 240.0) / 60.0;
+            outValue = 2.0 * sc / sqrt(1.0 + 3.0 * sc * sc);
+        } else if (deg > 300.0 && deg <= 360.0) {
+            outValue = 1.0;
+        }
+    
+        return outValue;
+    }
+    
+    vec4 map2(float ang) {
+        float r = step2(ang);
+        float y = step2(ang - 120. / 360.);
+        float b = step2(ang - 240. / 360.);
+        return Xform_RYB2RGB(r, y, b);
+    }
+
+    vec3 rgb2hsl(float r, float g, float b){
+        float maxx = max(r, max(g, b));
+        float minn = min(r, min(g, b));
+        float h, s, l = (maxx + minn) / 2.;
+    
+        if(maxx == minn){
+            h = s = 0.; // achromatic
+        }else{
+            float d = maxx - minn;
+            s = l > 0.5 ? d / (2. - maxx - minn) : d / (maxx + minn);
+            if(maxx == r)
+                h = (g - b) / d + (g < b ? 6. : 0.);
+            if(maxx == g)
+                h = (b - r) / d + 2.;
+            if(maxx == b)
+                h = (r - g) / d + 4.;
+            h /= 6.;
+        }
+    
+        return vec3(h, s, l);
+    }
+
     void main(void) {
-        vec3 color = hsx2rgb(gl_FragCoord.x / 200.0, gl_FragCoord.y / 200.0, uHueSatVal.b);
+        float xx = power(gl_FragCoord.x / 200.0, 1.);
+        float yy = gl_FragCoord.y / 200.0;
+
+        vec3 ryb = map2(xx).rgb;
+        float huue = rgb2hsl(ryb.r, ryb.g, ryb.b).r;
+
+        vec3 color = hsx2rgb(xx+huue*0., yy, uHueSatVal.b);
 
         float dist = distance(gl_FragCoord.xy, vec2(200.0*uHueSatVal.r, 200.0*uHueSatVal.g));
 
@@ -400,9 +899,52 @@ export const screenVertexQuadSource = `
 export const screenFragmentQuadSource = `
     precision mediump float;
     varying vec2 vTexCoords;
+    uniform vec2 uResolution;
+
     uniform sampler2D uTexture;
+
+    float lum(vec4 cc) {
+        float r = cc.r;
+        float g = cc.g;
+        float b = cc.b;
+        return sqrt(0.299*r*r + 0.587*g*g + 0.114*b*b);
+        // return sqrt(0.2126*r + 0.7152*g + 0.0722*b);
+    }
+
     void main() {
-        gl_FragColor = texture2D(uTexture, vTexCoords);
+
+        vec2 coords = vTexCoords * uResolution;
+
+        vec4 original = texture2D(uTexture, vTexCoords);
+
+        // float gradx = lum(texture2D(uTexture, 1./uResolution*vec2(coords.x+1., coords.y))) - lum(texture2D(uTexture, 1./uResolution*vec2(coords.x-1., coords.y)));
+        // float grady = lum(texture2D(uTexture, 1./uResolution*vec2(coords.x, coords.y+1.))) - lum(texture2D(uTexture, 1./uResolution*vec2(coords.x, coords.y-1.)));
+        float gradx = texture2D(uTexture, 1./uResolution*vec2(coords.x+1., coords.y)).a - texture2D(uTexture, 1./uResolution*vec2(coords.x-1., coords.y)).a;
+        float grady = texture2D(uTexture, 1./uResolution*vec2(coords.x, coords.y+1.)).a - texture2D(uTexture, 1./uResolution*vec2(coords.x, coords.y-1.)).a;
+
+        vec2 grad = vec2(gradx, grady);
+        float mag = length(grad);
+        grad /= mag;
+
+
+        vec2 lightdir = vec2(0.5, 0.5) / length(vec2(0.5, 0.5));
+
+        float d = dot(grad, lightdir);
+        d = (d+1.)/2.;
+        d = clamp(d, 0., 1.)*2.-1.;
+
+        gl_FragColor = vec4(d, d, d, 1.);
+
+        vec3 result = original.rgb;
+        result = mix(original.rgb, original.rgb*.6, d);
+        result = clamp(original.rgb+d*.4, 0., 1.);
+
+        gl_FragColor = vec4(grad.x*.5+.5, grad.y*.5+.5, 0., original.a);
+        gl_FragColor = vec4(d,d,d, original.a);
+        gl_FragColor = vec4(original.rgb, original.a);
+        gl_FragColor = vec4(original.aaa, original.a);
+        gl_FragColor = vec4(original.aaa, 1.);
+        gl_FragColor = vec4(original.rgb, original.a);
     }
 `;
 

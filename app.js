@@ -21,12 +21,12 @@ let debugelement;
 let valSlider;
 let brushSizeSlider;
 let jitterSlider;
-let pickedHue = 0.5;
+let pickedHue = Math.random();
 let pickedSat = 0.5;
 let pickedVal = 0.5;
-let currntHue = 0.5;
-let currntSat = 0.5;
-let currntVal = 0.5;
+let currntHue = pickedHue;
+let currntSat = pickedSat;
+let currntVal = pickedVal;
 let brushSize = 30.0;  // Change this to adjust the size
 let brushJitter = 0.5;
 let secondColor = [.5, .5, .5, 1.];
@@ -110,6 +110,7 @@ screenQuadProgramInfo = {
     },
     uniformLocations: {
         texture: gl.getUniformLocation(screenQuadProgram, 'uTexture'),
+        resolution: gl.getUniformLocation(screenQuadProgram, 'uResolution'),
     }
 };
 
@@ -218,7 +219,6 @@ function setupEvents(){
         document.addEventListener('keydown', function(event) {
             if (event.ctrlKey) {
                 ctrlPressed = true;
-            console.log(ctrlPressed)
         }
         });
         document.addEventListener('keyup', function(event) {
@@ -230,7 +230,6 @@ function setupEvents(){
         // scrolling affects brush size
         canvas.addEventListener('wheel', function(event) {
             event.preventDefault();
-            console.log(ctrlPressed)
 
             if(ctrlPressed){
                 pickedVal = Math.max(0, Math.min(pickedVal - event.deltaY * 0.000125, 1));
@@ -406,6 +405,7 @@ function renderFramebufferToScreen(gl, framebufferTexture) {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, framebufferTexture);
     gl.uniform1i(screenQuadProgramInfo.uniformLocations.texture, 0);
+    gl.uniform2f(screenQuadProgramInfo.uniformLocations.resolution, canvas.width, canvas.height);
 
     // Bind and draw the full-screen quad
     gl.bindBuffer(gl.ARRAY_BUFFER, screenQuadBuffer);
