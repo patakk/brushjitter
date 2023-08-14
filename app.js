@@ -381,11 +381,10 @@ function drawQuad(x, y, size, angle=0) {
     let dist = Math.sqrt((x - prevX) * (x - prevX) + (y - prevY) * (y - prevY));
     let parts = 2 + Math.floor(dist / detail);
 
-    gl.enable(gl.BLEND);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // gl.enable(gl.BLEND);
+    // gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    // gl.viewport(0, 0, canvas.width, canvas.height);
+    // gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
     for(let k = 0; k < parts; k++) {
 
         let rr = 0.026 + .046*(1-currntSat)*(1-currntVal);
@@ -417,15 +416,14 @@ function drawQuad(x, y, size, angle=0) {
         
         gl.drawArrays(gl.TRIANGLE_FAN, 0, 4);
     }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, canvas.width, canvas.height);
+    // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // gl.viewport(0, 0, canvas.width, canvas.height);
 
-    // gl.disable(gl.DEPTH_TEST);
-    gl.clearColor(.33, .33, .33, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // gl.clearColor(.33, .33, .33, 1.0);
+    // gl.clear(gl.COLOR_BUFFER_BIT);
+    // // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     renderFramebufferToScreen(gl, screentex);
 
     // Draw framebuffer's texture to screen
