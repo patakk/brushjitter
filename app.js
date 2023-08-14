@@ -381,9 +381,9 @@ function drawQuad(x, y, size, angle=0) {
     let dist = Math.sqrt((x - prevX) * (x - prevX) + (y - prevY) * (y - prevY));
     let parts = 2 + Math.floor(dist / detail);
 
-    // gl.enable(gl.BLEND);
-    // gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    // gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+    gl.viewport(0, 0, canvas.width, canvas.height);
     // gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
     for(let k = 0; k < parts; k++) {
 
