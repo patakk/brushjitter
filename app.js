@@ -424,7 +424,7 @@ function drawQuad(x, y, size, angle=0) {
     // // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-    renderFramebufferToScreen(gl, screentex);
+    // renderFramebufferToScreen(gl, screentex);
 
     // Draw framebuffer's texture to screen
 
