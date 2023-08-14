@@ -142,7 +142,7 @@ gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 function setupEvents(){
     if(isIpad){
         canvas.addEventListener('pointermove', handleDrawing);
-        // canvas.addEventListener('pointerdown', handleDown);
+        canvas.addEventListener('pointerdown', handleDown);
         canvas.addEventListener('pointerup', handleEnd);
         canvas.addEventListener('pointerout', handleEnd);
 
@@ -304,7 +304,7 @@ function handleDrawing(event) {
     event.preventDefault();
     event.preventDefault();
 
-    debugelement.innerHTML = "x: " + x + " y: " + y + " pointerType: " + event.pointerType + "pressure: " + event.pressure;
+    debugelement.innerHTML = "x: " + x + " y: " + y + " pointerType: " + event.pointerType + " pressure: " + event.pressure;
     if (event.pointerType === 'pen' && event.pressure === 0) {
         return;
     }
